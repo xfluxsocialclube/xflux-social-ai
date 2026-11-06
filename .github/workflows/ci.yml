@@ -31,6 +31,9 @@ jobs:
       - name: Instalar dependências JavaScript
         run: npm install --no-audit --no-fund
 
+      - name: Gerar ícones do aplicativo
+        run: npm run tauri -- icon src-tauri/icons/xflux-icon.svg
+
       - name: Compilar instalador Windows
         run: npm run tauri:build
 
