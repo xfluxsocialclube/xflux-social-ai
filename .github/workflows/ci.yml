@@ -10,6 +10,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: xflux-windows-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   windows-installer:
     runs-on: windows-latest
