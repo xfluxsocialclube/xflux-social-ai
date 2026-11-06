@@ -15,7 +15,6 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'publishing', labelKey: 'nav.publishing' },
   { id: 'autopilot', labelKey: 'nav.autopilot' },
   { id: 'networks', labelKey: 'nav.networks' },
-  { id: 'ai', labelKey: 'nav.ai' },
   { id: 'shopee', labelKey: 'nav.shopee' },
   { id: 'reports', labelKey: 'nav.reports' },
   { id: 'goodmorning', labelKey: 'nav.goodmorning' },
