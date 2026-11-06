@@ -32,7 +32,7 @@ async function nativeRoot(relativePath?: string): Promise<string> {
     : join(base, ROOT_NAME);
 }
 async function selectNativeFolder(): Promise<string | null> {
-  const selected = await openDialog({ directory: true, multiple: false, title: 'Escolha onde o XFLUX guardará seus vídeos e imagens' });
+  const selected = await openDialog({ directory: true, multiple: false, recursive: true, title: 'Escolha onde o XFLUX guardará seus vídeos e imagens' });
   if (typeof selected !== 'string' || !selected) return null;
   await kvSet(KEY, selected);
   await mkdir(await nativeRoot(), { recursive: true });
