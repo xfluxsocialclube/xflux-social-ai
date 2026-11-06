@@ -4,7 +4,7 @@
  * - Navegador: File System Access API (Chrome/Edge).
  */
 import { isTauri } from '@tauri-apps/api/core';
-import { join } from '@tauri-apps/api/path';
+import { dirname, join } from '@tauri-apps/api/path';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { exists, mkdir, readFile, remove, writeFile } from '@tauri-apps/plugin-fs';
 import { kvGet, kvSet } from '../db';
@@ -80,7 +80,7 @@ async function parentOf(path: string, create: boolean): Promise<{ dir: Dir; name
 export async function writeLibraryFile(path: string, file: Blob): Promise<void> {
   if (isTauri()) {
     const fullPath = await nativeRoot(path);
-    const parent = fullPath.slice(0, fullPath.lastIndexOf('/'));
+    const parent = await dirname(fullPath);
     await mkdir(parent, { recursive: true });
     await writeFile(fullPath, new Uint8Array(await file.arrayBuffer()));
     return;
