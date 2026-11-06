@@ -95,7 +95,8 @@ export async function readLibraryFile(path: string): Promise<File> {
   if (isTauri()) {
     const bytes = await readFile(await nativeRoot(path));
     const name = path.split('/').pop() ?? 'media';
-    return new File([bytes], name);
+    const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    return new File([buffer], name);
   }
   const { dir, name } = await parentOf(path, false);
   return (await dir.getFileHandle(name)).getFile();
