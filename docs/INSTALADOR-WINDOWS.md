@@ -26,7 +26,7 @@ Baixe o instalador Windows `.exe`, abra-o e siga as telas. O modo padrão instal
 
 ## Biblioteca de mídia
 
-No primeiro uso, o XFLUX pede que a pessoa escolha uma pasta para guardar os vídeos e imagens. No aplicativo desktop, o seletor nativo do Windows concede acesso à pasta escolhida. Se o acesso precisar ser renovado depois de reiniciar o aplicativo, basta escolher novamente a mesma pasta pelo botão de reconexão.
+No primeiro uso, o XFLUX pede que a pessoa escolha uma pasta para guardar os vídeos e imagens. No aplicativo desktop, o seletor nativo do Windows concede acesso à pasta escolhida. A autorização da pasta escolhida é preservada entre as aberturas do aplicativo pelo plugin de escopo persistente do Tauri.
 
 ## Segurança e assinatura
 
