@@ -3,7 +3,6 @@ import { Sidebar } from './layout/Sidebar';
 import { Header } from './layout/Header';
 import { Overview } from './pages/Overview';
 import { Library } from './pages/Library';
-import { AiPage } from './pages/ai/AiPage';
 import { Networks } from './pages/Networks';
 import { Settings } from './pages/Settings';
 import { ModulePage } from './pages/ModulePage';
@@ -22,7 +21,7 @@ import { loadSetting, saveSetting } from './services/settings';
 import type { TranslationKey } from './i18n/pt';
 
 const MODULE_DESC: Partial<Record<PageId, TranslationKey>> = {
-  library: 'mod.library', ai: 'mod.ai', schedule: 'mod.schedule', shopee: 'mod.shopee',
+  library: 'mod.library', schedule: 'mod.schedule', shopee: 'mod.shopee',
   reports: 'mod.reports', goodmorning: 'mod.goodmorning', help: 'mod.help',
 };
 
@@ -40,7 +39,6 @@ export default function App() {
   let content;
   if (page === 'overview') content = <Overview showMascot={showMascot} onHideMascot={() => setShowMascot(false)} onNavigate={navigate} />;
   else if (page === 'library') content = <Library />;
-  else if (page === 'ai') content = <AiPage />;
   else if (page === 'guide') content = <Guide onNavigate={navigate} />;
   else if (page === 'captions') content = <CaptionBank />;
   else if (page === 'pairing') content = <Pairing onNavigate={navigate} />;
