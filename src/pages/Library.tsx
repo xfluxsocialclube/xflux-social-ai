@@ -7,7 +7,6 @@ import type { TranslationKey } from '../i18n/pt';
 import { chooseFolder, getFolderStatus, readLibraryFile, requestAccess, type FolderStatus } from '../services/library/fsStore';
 import { addCategory, deleteMedia, getUsage, importFiles, listCategories, listHistory, listMedia, repeatBlockedUntil, setItemCategory } from '../services/library/library';
 import type { Category, HistoryEntry, ImportReport, MediaItem, UsageRecord } from '../services/library/types';
-import { aiStatus } from '../services/ai';
 
 const fmtSize = (b: number) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
@@ -59,8 +58,6 @@ function Preview({ item, cats, onClose, onDelete, onChanged }: { item: MediaItem
       {usage.length === 0 ? <small className="muted">{t('lib.usageEmpty')}</small> : (
         <ul className="list">{usage.map((u) => <li key={u.id}><span>{u.network}{u.postRef ? ` · ${u.postRef}` : ''}</span><span className="muted">{d(u.at)}</span></li>)}</ul>
       )}
-      <h2>{t('lib.ai')} <span className="pill off">{t(aiStatus() === 'ready' ? 'lib.aiReady' : 'lib.aiOffPill')}</span></h2>
-      <small className="muted">{t('lib.aiOff')}</small>
       <div className="modal-actions">
         <button className="btn ghost" onClick={onDelete}>{t('lib.delete')}</button>
         <button className="btn" onClick={onClose}>{t('lib.close')}</button>
