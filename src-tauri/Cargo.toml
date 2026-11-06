@@ -1,0 +1,12 @@
+[package]
+name = "xflux-social-ai"
+version = "0.5.0"
+description = "XFLUX Social AI"
+authors = ["XFLUX"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
