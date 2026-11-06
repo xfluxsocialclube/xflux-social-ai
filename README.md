@@ -42,8 +42,8 @@ docs/          TESTES.md
 - Configurações: idioma, mascote e lista de opções de armazenamento planejadas.
 - Estados vazios, avisos de funcionalidade indisponível e layout responsivo (menu recolhível em telas estreitas).
 
-## Pendente (próximas fases)
-agendamentos, integrações reais (Facebook, Instagram, Pinterest, TikTok, YouTube Shorts, Shopee Video após validação oficial), relatórios reais, Bom Dia com FLUX, central de ajuda, armazenamento (local, Google Drive, OneDrive, servidor próprio), empacotamento Tauri 2, backend FastAPI e SQLite.
+## Situação real do produto
+O aplicativo já contém biblioteca, banco de legendas, associações, calculadora, calendário, Autopilot, fila e publicação assistida. Ainda não é um serviço de publicação automática: faltam o servidor hospedado, autenticação de usuários, cofre de tokens, armazenamento remoto de mídia, agendador/filas e integrações aprovadas pelas plataformas. Google Drive, OneDrive, login Google, relatórios reais e empacotamento desktop também não devem ser considerados prontos até serem implementados e validados.
 
 ## Fase 2 — Biblioteca de mídias (implementada)
 - Importação de várias imagens e vídeos, miniaturas, pré-visualização, nome/formato/tamanho/data, categorias, pesquisa, filtro por tipo e categoria, exclusão com confirmação e detecção de duplicados por hash SHA-256.
@@ -52,16 +52,14 @@ agendamentos, integrações reais (Facebook, Instagram, Pinterest, TikTok, YouTu
 - Contrato de IA em `src/services/ai.ts`; nenhum modelo conectado.
 - Detalhes, limitações e testes: `docs/FASE2.md`.
 
-## Fase 3 — IA local com Ollama (implementada)
-- Menu **Inteligência artificial** com 5 abas: Assistente FLUX (conversas salvas), Gerador de conteúdo, Shopee, Análise de mídia e Configuração do Ollama.
-- Conexão real com o Ollama (`http://localhost:11434`, editável): teste de conexão, lista de modelos, escolha do modelo, detecção de suporte a imagens, respostas em streaming com botão Parar.
-- Análise de imagens e de vídeos (apenas alguns quadros reduzidos, nunca o vídeo inteiro) da Biblioteca ou de um arquivo importado na hora, sem cadastrá-lo.
-- Requer o Ollama e ao menos um modelo instalado. Instruções, modelos e limitações: `docs/FASE3.md`.
+## Fase 3 — IA local (arquivada, não faz parte do fluxo principal)
+- A implementação histórica com Ollama foi preservada no repositório para referência, mas não é carregada nem exibida no menu do aplicativo.
+- O XFLUX não exige Ollama, modelo local, GPU ou processamento de IA para funcionar.
 
 ## Fase 4 — Central de marketing automática (implementada)
 - **FLUX Caption Bank**: importação de legendas por XLSX/CSV com mapeamento de colunas, validação, duplicadas, edição, filtros, cópia, controle de uso e exportação.
 - **Associar vídeos e legendas** com sugestões que mostram o motivo e tela de revisão; **Calculadora de conteúdo**; **Calendário editorial** (semana, mês, próximas); **FLUX Autopilot** (ciclos, alertas e renovação); adaptadores por rede (todos "não conectado", nada simulado); **Guia do FLUX** em 8 etapas e Central de ajuda.
-- Não exige IA nem Ollama (a IA local da Fase 3 continua disponível como opção). Nenhuma dependência nova.
+- Não exige IA nem Ollama. A geração de legendas pode ser feita em qualquer ferramenta externa; o XFLUX importa XLSX/CSV. Nenhuma dependência nova.
 - Publicação automática (inclusive com o computador desligado) **não existe**: exigirá backend e agendador em nuvem.
 - Funcionalidades, regras, pendências, dependências e relatório de testes: `docs/FASE4.md`.
 
@@ -72,3 +70,6 @@ agendamentos, integrações reais (Facebook, Instagram, Pinterest, TikTok, YouTu
 - Arquitetura do servidor e do agendador em nuvem (futuro), contrato da API e pesquisa oficial de cada plataforma: `docs/ARQUITETURA-FASE5.md`, `docs/BACKEND-CONTRATO.md`, `docs/openapi-backend.yaml`, `docs/INTEGRACOES-OFICIAIS.md`.
 - Funcionalidades, dependências externas, pendências e relatório de testes: `docs/FASE5.md`. Sem banco novo e sem dependências novas.
 
+
+## Validação contínua
+O GitHub Actions executa a instalação das dependências e a compilação de produção a cada alteração na branch principal. O artefato `dist` é guardado em cada execução bem-sucedida.
