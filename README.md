@@ -6,17 +6,29 @@
 Sistema de gerenciamento e automação de conteúdo para redes sociais. O projeto evoluiu por fases (1 a 5). Nenhuma integração real com redes sociais existe ainda: a publicação é **assistida** (o XFLUX planeja; o usuário publica e confirma). Os números do painel inicial continuam sendo **dados de exemplo**, identificados como tal.
 
 ## Tecnologias
-React 18, TypeScript, Vite e CSS puro (tema escuro). Sem serviços pagos. Preparado para Tauri 2 (`base: './'`) e, em fases futuras, backend Python/FastAPI + SQLite.
+React 18, TypeScript, Vite e CSS puro (tema escuro). Sem serviços pagos. Empacotamento desktop com Tauri 2; a interface usa WebView2 no Windows. Backend Python/FastAPI + SQLite permanece uma etapa futura.
 
-## Instalação e execução
-Requer Node.js 18 ou superior.
+## Instalação no Windows
+
+A versão desktop é empacotada com **Tauri 2** e gera um instalador NSIS `.exe` para Windows 10/11. O instalador é criado pelo GitHub Actions em um runner Windows; o usuário final não precisa instalar Node.js, Rust, npm ou copiar código.
+
+- Os instaladores de compilação ficam em **GitHub → Releases**.
+- O instalador usa o modo por usuário (não exige administrador por padrão).
+- O WebView2 é usado para exibir a interface; versões atuais do Windows 10 normalmente já o incluem.
+- Enquanto o aplicativo não tiver certificado de assinatura de código, o Windows pode exibir o aviso do SmartScreen. Isso não significa, por si só, que o arquivo esteja infectado; confira sempre se o download veio da página oficial do repositório.
+
+### Desenvolvimento
+
+Requer Node.js 18 ou superior e Rust com os componentes de compilação do Windows.
 
 ```bash
 npm install
-npm run dev        # desenvolvimento em http://localhost:5173
-npm run build      # verifica tipos (tsc) e gera a versão de produção em dist/
-npm run preview    # testa a versão de produção
+npm run dev          # desenvolvimento web em http://localhost:5173
+npm run build        # verifica tipos e gera dist/
+npm run tauri:build  # empacota o aplicativo desktop no sistema de desenvolvimento
 ```
+
+A compilação de distribuição e o instalador oficial são feitos no workflow `.github/workflows/ci.yml`.
 
 ## Estrutura
 ```
@@ -52,7 +64,7 @@ O aplicativo já contém biblioteca, banco de legendas, associações, calculado
 - Contrato de IA em `src/services/ai.ts`; nenhum modelo conectado.
 - Detalhes, limitações e testes: `docs/FASE2.md`.
 
-## Fase 3 — IA local (arquivada, não faz parte do fluxo principal)
+## Fase 3 — IA local (opcional e fora do fluxo principal)
 - A implementação histórica com Ollama foi preservada no repositório para referência, mas não é carregada nem exibida no menu do aplicativo.
 - O XFLUX não exige Ollama, modelo local, GPU ou processamento de IA para funcionar.
 
