@@ -1,9 +1,9 @@
 import type { TranslationKey } from '../i18n/pt';
 
-export type PageId = 'overview' | 'guide' | 'library' | 'captions' | 'pairing' | 'calculator' | 'schedule' | 'publishing' | 'autopilot' | 'networks' | 'ai' | 'shopee' | 'reports' | 'goodmorning' | 'help' | 'settings';
+export type PageId = 'overview' | 'guide' | 'library' | 'captions' | 'pairing' | 'calculator' | 'schedule' | 'publishing' | 'autopilot' | 'networks' | 'shopee' | 'reports' | 'goodmorning' | 'help' | 'settings';
 export interface NavItem { id: PageId; labelKey: TranslationKey; }
 
-/** Ordem do menu: fluxo principal primeiro; a IA local é opcional e fica depois. */
+/** Ordem do menu: fluxo principal de organização, planejamento e publicação assistida. */
 export const NAV_ITEMS: NavItem[] = [
   { id: 'overview', labelKey: 'nav.overview' },
   { id: 'guide', labelKey: 'nav.guide' },
