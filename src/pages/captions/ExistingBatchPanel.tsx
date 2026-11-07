@@ -26,6 +26,7 @@ export function ExistingBatchPanel({ onClose, onSaved }: { onClose: () => void; 
     all.forEach((c) => map.set(c.batchId || 'legacy', [...(map.get(c.batchId || 'legacy') ?? []), c]));
     return [...map.entries()].map(([id, rows]) => ({ id, rows, createdAt: rows.reduce((a, c) => a < c.createdAt ? a : c.createdAt, rows[0]?.createdAt ?? '') })).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }, [all]);
+  useEffect(() => { if (!batchId && batches.length) { setBatchId(batches[0].id); setSelected(batches[0].rows.map((c) => c.id)); } }, [batches, batchId]);
   const batch = batches.find((b) => b.id === batchId) ?? batches[0];
   const chosen = batch?.rows.filter((c) => selected.includes(c.id)) ?? [];
   const current = chosen[index];
