@@ -25,6 +25,16 @@ A API fica em http://127.0.0.1:8000 e a documentação interativa em /docs.
 
 O plano de implementação segura de Instagram e Facebook está em [docs/META_OAUTH_ROLLOUT.md](docs/META_OAUTH_ROLLOUT.md). Ele descreve requisitos internos do servidor; não peça App ID, segredo ou URL de servidor ao usuário final.
 
+## Configuração mínima de produção (ainda não habilita multiusuário)
+
+Além de `XFLUX_ENV=production`, configure no ambiente do servidor:
+
+- `XFLUX_SESSION_TOKEN`: segredo aleatório com pelo menos 32 caracteres, guardado no gerenciador de segredos.
+- `XFLUX_ALLOWED_ORIGINS`: lista explícita separada por vírgulas, contendo somente origens HTTPS do aplicativo e, se necessário, `tauri://localhost`. Não use `*` nem origens HTTP em produção.
+- `XFLUX_DATABASE_PATH`: caminho persistente para o arquivo SQLite, fora de diretórios temporários.
+
+O backend agora recusa chamadas autenticadas em produção quando o segredo é curto/ausente ou quando a lista de origens não foi definida com segurança. Essa chave ainda é compartilhada e serve somente como barreira temporária para ambiente privado; **não é login individual nem isolamento de clientes**.
+
 ## Antes de hospedar publicamente
 
 - Definir segredo forte no gerenciador de segredos do provedor; nunca usar o exemplo.
