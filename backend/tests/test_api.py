@@ -1,6 +1,9 @@
 from fastapi.testclient import TestClient
+
 from app.main import app
+
 client = TestClient(app)
+
 
 def test_health_reports_only_real_capabilities():
     response = client.get("/v1/health")
@@ -8,26 +11,56 @@ def test_health_reports_only_real_capabilities():
     body = response.json()
     assert body["service"] == "xflux-backend"
     assert body["capabilities"] == ["accounts"]
-    assert all(not p["oauth"] and not p["publishing"] for p in body["providers"])
+    assert all(not provider["oauth"] and not provider["publishing"] for provider in body["providers"])
+
 
 def test_accounts_require_session_when_secret_missing(monkeypatch):
     monkeypatch.setattr("app.main.SESSION_TOKEN", "")
     response = client.get("/v1/accounts")
     assert response.status_code == 503
 
+
 def test_accounts_reject_wrong_session(monkeypatch):
     monkeypatch.setattr("app.main.SESSION_TOKEN", "correct-secret")
     response = client.get("/v1/accounts", headers={"Authorization": "Bearer wrong-secret"})
     assert response.status_code == 401
 
+
 def test_production_rejects_short_session_secret(monkeypatch):
     monkeypatch.setattr("app.main.ENVIRONMENT", "production")
     monkeypatch.setattr("app.main.SESSION_TOKEN", "short")
+    monkeypatch.setenv("XFLUX_ALLOWED_ORIGINS", "https://app.example.com")
     response = client.get("/v1/accounts", headers={"Authorization": "Bearer short"})
     assert response.status_code == 503
 
+
+def test_production_rejects_missing_origin_allowlist(monkeypatch):
+    monkeypatch.setattr("app.main.ENVIRONMENT", "production")
+    monkeypatch.setattr("app.main.SESSION_TOKEN", "s" * 40)
+    monkeypatch.delenv("XFLUX_ALLOWED_ORIGINS", raising=False)
+    response = client.get("/v1/accounts", headers={"Authorization": f"Bearer {'s' * 40}"})
+    assert response.status_code == 503
+
+
+def test_production_rejects_wildcard_origin(monkeypatch):
+    monkeypatch.setattr("app.main.ENVIRONMENT", "production")
+    monkeypatch.setattr("app.main.SESSION_TOKEN", "s" * 40)
+    monkeypatch.setenv("XFLUX_ALLOWED_ORIGINS", "*")
+    response = client.get("/v1/accounts", headers={"Authorization": f"Bearer {'s' * 40}"})
+    assert response.status_code == 503
+
+
+def test_production_accepts_explicit_https_origin_and_strong_secret(monkeypatch):
+    monkeypatch.setattr("app.main.ENVIRONMENT", "production")
+    monkeypatch.setattr("app.main.SESSION_TOKEN", "s" * 40)
+    monkeypatch.setenv("XFLUX_ALLOWED_ORIGINS", "https://app.example.com")
+    response = client.get("/v1/accounts", headers={"Authorization": f"Bearer {'s' * 40}"})
+    assert response.status_code == 200
+
+
 def test_account_listing_exposes_metadata_only(monkeypatch, tmp_path):
     import app.main as backend
+
     monkeypatch.setattr(backend, "SESSION_TOKEN", "test-secret")
     monkeypatch.setattr(backend, "DB_PATH", tmp_path / "xflux-test.sqlite3")
     with backend.connect_db() as db:
@@ -42,10 +75,12 @@ def test_account_listing_exposes_metadata_only(monkeypatch, tmp_path):
     assert "access_token" not in account
     assert "refresh_token" not in account
 
+
 def test_disconnect_requires_valid_session(monkeypatch):
     monkeypatch.setattr("app.main.SESSION_TOKEN", "test-secret")
     response = client.delete("/v1/accounts/acc-1", headers={"Authorization": "Bearer wrong-secret"})
     assert response.status_code == 401
+
 
 def test_oauth_is_not_faked(monkeypatch):
     monkeypatch.setattr("app.main.ENVIRONMENT", "development")
