@@ -1,4 +1,5 @@
 import type { Dictionary } from './pt';
+import { captionsEs } from './captions';
 import { libEs } from './library';
 import { aiEs } from './ai';
 import { planEs } from './planner';
@@ -75,5 +76,6 @@ export const es: Dictionary = {
   ...libEs,
   ...aiEs,
   ...planEs,
+  ...captionsEs,
   ...pubEs,
 };
