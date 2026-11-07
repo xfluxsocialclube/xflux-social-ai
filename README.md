@@ -55,7 +55,7 @@ docs/          TESTES.md
 - Estados vazios, avisos de funcionalidade indisponível e layout responsivo (menu recolhível em telas estreitas).
 
 ## Situação real do produto
-O aplicativo já contém biblioteca, banco de legendas, associações, calculadora, calendário, Autopilot, fila e publicação assistida. Ainda não é um serviço de publicação automática: faltam o servidor hospedado, autenticação de usuários, cofre de tokens, armazenamento remoto de mídia, agendador/filas e integrações aprovadas pelas plataformas. Google Drive, OneDrive, login Google, relatórios reais e empacotamento desktop também não devem ser considerados prontos até serem implementados e validados.
+O aplicativo já contém biblioteca, banco de legendas, associações, calculadora, calendário, Autopilot, fila e publicação assistida. O **instalador desktop para Windows já foi compilado e validado pelo GitHub Actions** (Tauri 2 + NSIS); isso confirma a geração do instalador, mas não substitui testes de uso em diferentes computadores Windows. Ainda não é um serviço de publicação automática: faltam o servidor hospedado, autenticação de usuários, cofre de tokens, armazenamento remoto de mídia, agendador/filas e integrações aprovadas pelas plataformas. Google Drive, OneDrive, login Google e relatórios reais continuam pendentes.
 
 ## Fase 2 — Biblioteca de mídias (implementada)
 - Importação de várias imagens e vídeos, miniaturas, pré-visualização, nome/formato/tamanho/data, categorias, pesquisa, filtro por tipo e categoria, exclusão com confirmação e detecção de duplicados por hash SHA-256.
