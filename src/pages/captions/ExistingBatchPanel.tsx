@@ -41,7 +41,8 @@ export function ExistingBatchPanel({ onClose, onSaved }: { onClose: () => void; 
     if (!current || !fields.text.trim()) { setError(t('cb.captionRequired')); return; }
     setBusy(true); setError('');
     try {
-      await saveCaption({ ...current, product: fields.product.trim(), category: fields.category.trim(), text: fields.text.trim(), cta: fields.cta.trim(), hashtags: parseHashtags(fields.hashtags), keywords: parseKeywords(fields.keywords) });
+      const updated = await saveCaption({ ...current, product: fields.product.trim(), category: fields.category.trim(), text: fields.text.trim(), cta: fields.cta.trim(), hashtags: parseHashtags(fields.hashtags), keywords: parseKeywords(fields.keywords) });
+      setAll((rows) => rows.map((row) => row.id === updated.id ? updated : row));
       const next = index + 1;
       if (next >= chosen.length) { setDone(true); setEditing(false); onSaved(); }
       else setIndex(next);
