@@ -21,6 +21,10 @@ Na pasta backend, crie um ambiente virtual, instale requirements.txt e execute:
 
 A API fica em http://127.0.0.1:8000 e a documentação interativa em /docs.
 
+## Próxima integração: Meta
+
+O plano de implementação segura de Instagram e Facebook está em [docs/META_OAUTH_ROLLOUT.md](docs/META_OAUTH_ROLLOUT.md). Ele descreve requisitos internos do servidor; não peça App ID, segredo ou URL de servidor ao usuário final.
+
 ## Antes de hospedar publicamente
 
 - Definir segredo forte no gerenciador de segredos do provedor; nunca usar o exemplo.
