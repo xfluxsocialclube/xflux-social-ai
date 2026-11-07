@@ -1,9 +1,14 @@
 import { libPt } from './library';
+import { captionsPt } from './captions';
 import { aiPt } from './ai';
 import { planPt } from './planner';
 import { pubPt } from './publishing';
 /** Português brasileiro (idioma padrão). Define o conjunto de chaves de tradução. */
 export const pt = {
+  'nav.quickNavigation': 'Navegação rápida',
+  'nav.previous': 'Seção anterior',
+  'nav.home': 'Ir para a página inicial',
+  'nav.next': 'Próxima seção',
   'app.slogan': 'Seu conteúdo. Suas redes. Seu controle.',
   'nav.overview': 'Visão geral',
   'nav.library': 'Biblioteca de conteúdos',
@@ -70,6 +75,7 @@ export const pt = {
   ...libPt,
   ...aiPt,
   ...planPt,
+  ...captionsPt,
   ...pubPt,
 } as const;
 
