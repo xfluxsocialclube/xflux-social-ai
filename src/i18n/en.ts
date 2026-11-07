@@ -1,4 +1,5 @@
 import type { Dictionary } from './pt';
+import { captionsEn } from './captions';
 import { libEn } from './library';
 import { aiEn } from './ai';
 import { planEn } from './planner';
@@ -75,5 +76,6 @@ export const en: Dictionary = {
   ...libEn,
   ...aiEn,
   ...planEn,
+  ...captionsEn,
   ...pubEn,
 };
