@@ -2,9 +2,9 @@ name: XFLUX Windows installer
 
 on:
   push:
-    branches: [principal]
+    branches: [main]
   pull_request:
-    branches: [principal]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -50,7 +50,7 @@ jobs:
           retention-days: 30
 
       - name: Publicar instalador para download
-        if: github.event_name == 'push' && github.ref == 'refs/heads/principal'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: windows-build-${{ github.run_number }}
