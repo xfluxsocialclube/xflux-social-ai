@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 NETWORKS = ("instagram", "facebook", "tiktok", "shopee", "pinterest", "youtube")
 DB_PATH = Path(os.getenv("XFLUX_DATABASE_PATH", "./data/xflux.sqlite3"))
 SESSION_TOKEN = os.getenv("XFLUX_SESSION_TOKEN", "")
+ENVIRONMENT = os.getenv("XFLUX_ENV", "development").lower()
 app = FastAPI(title="XFLUX Backend", version="1.0.0")
 origins = [x.strip() for x in os.getenv("XFLUX_ALLOWED_ORIGINS", "http://localhost:1420,tauri://localhost").split(",") if x.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=False, allow_methods=["GET", "POST", "DELETE", "OPTIONS"], allow_headers=["Authorization", "Content-Type"])
@@ -25,8 +26,10 @@ def connect_db() -> sqlite3.Connection:
     return db
 
 def require_session(authorization: str | None = Header(default=None)) -> None:
-    if not SESSION_TOKEN:
-        raise HTTPException(status_code=503, detail="XFLUX_SESSION_TOKEN is not configured")
+    # A chave compartilhada é apenas uma barreira temporária para ambiente privado.
+    # Em produção, rejeitamos segredos curtos para evitar implantações obviamente frágeis.
+    if not SESSION_TOKEN or (ENVIRONMENT == "production" and len(SESSION_TOKEN) < 32):
+        raise HTTPException(status_code=503, detail="A secure XFLUX session secret is not configured")
     if authorization is None or not hmac.compare_digest(authorization, f"Bearer {SESSION_TOKEN}"):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
