@@ -5,6 +5,10 @@ import { planEn } from './planner';
 import { pubEn } from './publishing';
 
 export const en: Dictionary = {
+  'nav.quickNavigation': 'Quick navigation',
+  'nav.previous': 'Previous section',
+  'nav.home': 'Go to home page',
+  'nav.next': 'Next section',
   'app.slogan': 'Your content. Your networks. Your control.',
   'nav.overview': 'Overview',
   'nav.library': 'Content library',
