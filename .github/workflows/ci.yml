@@ -33,7 +33,7 @@ jobs:
         run: choco install nsis --yes --no-progress
 
       - name: Instalar dependências JavaScript
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Gerar ícones do aplicativo
         run: npm run tauri -- icon src-tauri/icons/xflux-icon.svg
