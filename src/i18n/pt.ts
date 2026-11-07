@@ -1,4 +1,5 @@
 import { libPt } from './library';
+import { captionsPt } from './captions';
 import { aiPt } from './ai';
 import { planPt } from './planner';
 import { pubPt } from './publishing';
@@ -74,6 +75,7 @@ export const pt = {
   ...libPt,
   ...aiPt,
   ...planPt,
+  ...captionsPt,
   ...pubPt,
 } as const;
 
