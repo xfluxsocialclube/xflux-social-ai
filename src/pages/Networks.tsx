@@ -78,8 +78,10 @@ export function Networks() {
         {ADAPTERS.map((n) => {
           const facts = getFacts(n.id); const c = connectionOf(n.id, snap); const route = planRoute(n.id, snap);
           const prov = snap.health?.providers.find((p) => p.network === n.id);
-          const canOauth = snap.reachable === true && !!prov?.oauth;
-          const why = !snap.url ? t('pub.cant.noServer') : snap.reachable !== true ? t('pub.cant.unreachable') : !prov?.oauth ? t('pub.cant.provider') : '';
+          // Snapshot antigo não pode habilitar OAuth se o endereço do servidor foi removido.
+          const hasServer = Boolean(getBackendUrl().trim()) && Boolean(snap.url);
+          const canOauth = hasServer && snap.reachable === true && !!prov?.oauth;
+          const why = !hasServer ? t('pub.cant.noServer') : snap.reachable !== true ? t('pub.cant.unreachable') : !prov?.oauth ? t('pub.cant.provider') : '';
           return (
             <div className="card net" key={n.id} style={{ alignItems: 'stretch', textAlign: 'left' }}>
               <div className="row"><div className="net-dot" style={{ background: n.color }}>{n.name[0]}</div><strong>{n.priority}. {n.name}</strong></div>
