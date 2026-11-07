@@ -25,7 +25,7 @@ export function Networks() {
   const [open, setOpen] = useState<string | null>(null);
   const [oauth, setOauth] = useState<{ network: string; url: string; host: string } | null>(null);
   const [disc, setDisc] = useState<{ id: string; name: string } | null>(null);
-  const [serverOpen, setServerOpen] = useState(() => Boolean(getBackendUrl()));
+  const [serverOpen, setServerOpen] = useState(false);
 
   const check = useCallback(async () => { setBusy(true); try { setSnap(await refreshSnapshot()); } finally { setBusy(false); } }, []);
   useEffect(() => { if (getBackendUrl()) void check(); }, [check]);
@@ -39,7 +39,10 @@ export function Networks() {
   };
   const errText = (e: unknown) => t(`pub.srv.err.${e instanceof BackendError ? e.kind : 'unreachable'}` as TranslationKey);
   const connect = async (network: string, reconnectId?: string) => {
-    setErr(null); setBusy(true);
+    setErr(null);
+    // Nunca pedir endereço/chave ao usuário comum: sem backend, manter publicação assistida.
+    if (!getBackendUrl().trim()) { setErr(t('pub.cant.noServer')); return; }
+    setBusy(true);
     try { const r = await startOAuth(network, reconnectId); setOauth({ network, url: r.authorizationUrl, host: new URL(r.authorizationUrl).host }); }
     catch (e) { setErr(errText(e)); } finally { setBusy(false); }
   };
