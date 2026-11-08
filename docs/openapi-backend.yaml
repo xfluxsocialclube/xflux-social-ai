@@ -3,8 +3,7 @@ info:
   title: XFLUX Backend (contrato implementado v1)
   version: "1"
   description: >
-    Estado real do protótipo. A autenticação Bearer atual usa uma chave compartilhada temporária;
-    ainda não existe identidade multiusuário. OAuth e publicação estão desativados.
+    Estado real do protótipo. Endpoints protegidos validam JWT HS256 e isolam metadados de contas pelo subject verificado. Ainda não há emissor OIDC/login conectado. OAuth e publicação estão desativados.
 servers:
   - url: https://api.example.invalid
 security: []
@@ -23,12 +22,12 @@ paths:
   /v1/accounts:
     get:
       operationId: listAccounts
-      summary: Lista metadados locais (sem isolamento multiusuário)
+      summary: Lista metadados pertencentes ao usuário autenticado
       security:
         - sessionBearer: []
       responses:
         "200":
-          description: Metadados das contas
+          description: Metadados das contas pertencentes ao subject autenticado
           content:
             application/json:
               schema:
@@ -36,7 +35,7 @@ paths:
         "401":
           description: Sessão ausente ou incorreta
         "503":
-          description: Segredo ausente ou configuração de produção insegura
+          description: Configuração JWT ou de produção ausente/insegura
   /v1/accounts/{account_id}:
     delete:
       operationId: deleteAccountMetadata
@@ -81,7 +80,7 @@ components:
     sessionBearer:
       type: http
       scheme: bearer
-      description: Chave temporária compartilhada do XFLUX; não é token de rede social nem login multiusuário.
+      description: JWT assinado HS256 pelo emissor configurado; deve conter iss, aud, sub, iat e exp válidos. Não é token de rede social.
   schemas:
     Health:
       type: object
