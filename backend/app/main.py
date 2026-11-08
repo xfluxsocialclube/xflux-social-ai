@@ -208,43 +208,29 @@ def meta_oauth_callback(
         access_token = str(long_token.get("access_token", ""))
         if not access_token:
             raise HTTPException(status_code=502, detail="Meta did not return a long-lived token")
-        page_data = _meta_json(
-            f"https://graph.facebook.com/{version}/me/accounts?{urlencode({'fields': 'id,name,access_token,tasks,instagram_business_account', 'access_token': access_token})}"
-        )
-        pages = page_data.get("data", [])
-        if not isinstance(pages, list):
-            raise HTTPException(status_code=502, detail="Meta returned an invalid pages response")
+        page_url = f"https://graph.facebook.com/{version}/me/accounts?{urlencode({'fields': 'id,name,access_token,tasks,instagram_business_account', 'access_token': access_token})}"
+        pages: list[dict[str, Any]] = []
+        # Meta usa paginação por cursor; validar o destino antes de seguir cada link.
+        for _ in range(100):
+            page_data = _meta_json(page_url)
+            batch = page_data.get("data", [])
+            if not isinstance(batch, list) or any(not isinstance(item, dict) for item in batch):
+                raise HTTPException(status_code=502, detail="Meta returned an invalid pages response")
+            pages.extend(batch)
+            paging = page_data.get("paging")
+            next_url = paging.get("next") if isinstance(paging, dict) else None
+            if not next_url:
+                break
+            parsed_next = urlsplit(str(next_url))
+            if parsed_next.scheme != "https" or parsed_next.hostname != "graph.facebook.com" or parsed_next.username or parsed_next.password:
+                raise HTTPException(status_code=502, detail="Meta returned an unsafe pagination URL")
+            page_url = str(next_url)
+        else:
+            raise HTTPException(status_code=502, detail="Meta pagination limit exceeded")
         saved = 0
         scopes = ["pages_show_list", "pages_read_engagement", "pages_manage_posts", "publish_video", "instagram_basic", "instagram_content_publish"]
         now = datetime.now(timezone.utc).isoformat()
-        expires = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() + int(long_token.get("expires_in", 0)), timezone.utc).isoformat() if long_token.get("expires_in") else None
-        with connect_db() as db:
-            for page in pages:
-                if not isinstance(page, dict) or not page.get("id") or not page.get("access_token"):
-                    continue
-                page_id = str(page["id"])
-                page_name = str(page.get("name") or "Facebook Page")
-                page_token = str(page["access_token"])
-                targets = []
-                if network == "facebook":
-                    targets.append(("facebook", page_id, page_name, page_token))
-                ig = page.get("instagram_business_account")
-                if network == "instagram" and isinstance(ig, dict) and ig.get("id"):
-                    targets.append(("instagram", str(ig["id"]), f"Instagram · {page_name}", page_token))
-                for target_network, provider_id, display_name, token_value in targets:
-                    db.execute("DELETE FROM accounts WHERE owner_id = ? AND network = ? AND provider_account_id = ?", (owner_id, target_network, provider_id))
-                    account_id = str(uuid.uuid4())
-                    db.execute(
-                        """INSERT INTO accounts
-                           (id, owner_id, network, display_name, state, scopes_json, connected_at,
-                            expires_at, last_checked_at, encrypted_token, provider_account_id)
-                           VALUES (?, ?, ?, ?, 'connected', ?, ?, ?, ?, ?, ?)
-                           ON CONFLICT(id) DO NOTHING""",
-                        (account_id, owner_id, target_network, display_name, json.dumps(scopes), now,
-                         expires, now, encrypt_token(token_value), provider_id),
-                    )
-                    saved += 1
-            db.commit()
+        # O prazo do token de usuário não é o prazo do token da Página; não atribuir expiração incorreta.
         if saved == 0:
             detail = "Nenhuma Página do Facebook foi encontrada." if network == "facebook" else "Nenhuma conta profissional do Instagram vinculada a uma Página foi encontrada."
             return Response(f"<h2>XFLUX</h2><p>{html.escape(detail)} Verifique as permissões e a vinculação no Meta Business.</p>", media_type="text/html", status_code=200)
