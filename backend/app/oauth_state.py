@@ -25,12 +25,16 @@ def ensure_oauth_state_table(db: sqlite3.Connection) -> None:
             state_hash TEXT PRIMARY KEY,
             network TEXT NOT NULL,
             session_hash TEXT NOT NULL,
+            session_subject TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL,
             expires_at TEXT NOT NULL,
             consumed_at TEXT
         )
         """
     )
+    columns = {row["name"] for row in db.execute("PRAGMA table_info(oauth_states)")}
+    if "session_subject" not in columns:
+        db.execute("ALTER TABLE oauth_states ADD COLUMN session_subject TEXT NOT NULL DEFAULT ''")
 
 
 def issue_oauth_state(
@@ -56,9 +60,9 @@ def issue_oauth_state(
     ensure_oauth_state_table(db)
     db.execute(
         """INSERT INTO oauth_states
-           (state_hash, network, session_hash, created_at, expires_at, consumed_at)
-           VALUES (?, ?, ?, ?, ?, NULL)""",
-        (state_hash, network, session_hash, _utc_iso(issued_at), _utc_iso(expires_at)),
+           (state_hash, network, session_hash, session_subject, created_at, expires_at, consumed_at)
+           VALUES (?, ?, ?, ?, ?, ?, NULL)""",
+        (state_hash, network, session_hash, session_subject, _utc_iso(issued_at), _utc_iso(expires_at)),
     )
     return state
 
