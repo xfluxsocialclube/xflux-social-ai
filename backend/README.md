@@ -1,3 +1,19 @@
+# Estado atual do backend (atualizado em 08/11/2026)
+
+> Esta seção prevalece sobre descrições históricas mais abaixo, que podem mencionar etapas anteriores.
+
+O backend **já contém uma implementação inicial de OAuth da Meta (Facebook/Instagram)**: início de autorização, estado de uso único vinculado à sessão, callback, troca/validação de tokens, consulta de Páginas/contas Instagram e armazenamento de token criptografado. O recurso só é habilitado quando a configuração necessária está presente. Isso ainda não equivale a publicação automática pronta para produção.
+
+Também existem autenticação JWT (HS256 apenas em desenvolvimento; RS256/JWKS HTTPS em produção), isolamento de contas por proprietário, cofre Fernet e endpoints de consulta/desconexão.
+
+**Ainda não estão concluídos:** interface de cadastro/login e emissão/renovação de sessão; hospedagem e provedor de identidade reais; testes OAuth com aplicativo Meta aprovado; publicação pela API; upload remoto, fila durável e agendador; integrações reais de TikTok, Pinterest, YouTube Shorts e Shopee Video.
+
+A dependência `cryptography` agora está declarada em `requirements.txt`, pois o backend importa o cofre Fernet durante a inicialização.
+
+Para preparar uma implantação containerizada, consulte [DEPLOY.md](DEPLOY.md). Os arquivos Docker não provisionam credenciais, domínio, identidade ou aprovação de plataformas.
+
+---
+
 # Servidor XFLUX — base inicial
 
 Esta pasta contém o primeiro serviço executável do backend. Ele ainda **não conecta redes nem publica conteúdo**.
