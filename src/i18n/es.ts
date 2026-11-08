@@ -7,9 +7,9 @@ import { pubEs } from './publishing';
 
 export const es: Dictionary = {
   'nav.quickNavigation': 'Navegación rápida',
-  'nav.previous': 'Sección anterior',
-  'nav.home': 'Ir a la página de inicio',
-  'nav.next': 'Sección siguiente',
+  'nav.previous': 'Volver',
+  'nav.home': 'Inicio',
+  'nav.next': 'Siguiente',
   'app.slogan': 'Tu contenido. Tus redes. Tu control.',
   'nav.overview': 'Resumen general',
   'nav.library': 'Biblioteca de contenidos',
