@@ -32,7 +32,7 @@ def ensure_oauth_state_table(db: sqlite3.Connection) -> None:
         )
         """
     )
-    columns = {row["name"] for row in db.execute("PRAGMA table_info(oauth_states)")}
+    columns = {row[1] for row in db.execute("PRAGMA table_info(oauth_states)")}
     if "session_subject" not in columns:
         db.execute("ALTER TABLE oauth_states ADD COLUMN session_subject TEXT NOT NULL DEFAULT ''")
 
@@ -95,10 +95,10 @@ def consume_oauth_state(
         ).fetchone()
         if (
             row is None
-            or row["network"] != network
-            or row["session_hash"] != session_hash
-            or row["consumed_at"] is not None
-            or row["expires_at"] <= timestamp
+            or row[0] != network
+            or row[1] != session_hash
+            or row[3] is not None
+            or row[2] <= timestamp
         ):
             db.rollback()
             return False
@@ -137,7 +137,7 @@ def consume_oauth_state_for_callback(
                WHERE state_hash = ? AND network = ?""",
             (state_hash, network),
         ).fetchone()
-        if row is None or not row["session_subject"] or row["consumed_at"] is not None or row["expires_at"] <= timestamp:
+        if row is None or not row[0] or row[2] is not None or row[1] <= timestamp:
             db.rollback()
             return None
         updated = db.execute(
@@ -147,7 +147,7 @@ def consume_oauth_state_for_callback(
         if updated.rowcount != 1:
             db.rollback()
             return None
-        subject = row["session_subject"]
+        subject = row[0]
         db.commit()
         return subject
     except Exception:
