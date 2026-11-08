@@ -1,8 +1,37 @@
+import sqlite3
+import time
+
+import jwt
 from fastapi.testclient import TestClient
 
 from app.main import app
 
 client = TestClient(app)
+SECRET = "test-signing-secret-that-is-at-least-32-bytes-long"
+
+
+def token(subject="user-1", **overrides):
+    now = int(time.time())
+    claims = {
+        "sub": subject,
+        "iss": "https://identity.xflux.test",
+        "aud": "xflux-api",
+        "iat": now,
+        "exp": now + 300,
+    }
+    claims.update(overrides)
+    return jwt.encode(claims, SECRET, algorithm="HS256")
+
+
+def auth(subject="user-1"):
+    return {"Authorization": f"Bearer {token(subject)}"}
+
+
+def configure_identity(monkeypatch):
+    monkeypatch.setenv("XFLUX_JWT_SECRET", SECRET)
+    monkeypatch.setenv("XFLUX_JWT_ISSUER", "https://identity.xflux.test")
+    monkeypatch.setenv("XFLUX_JWT_AUDIENCE", "xflux-api")
+    monkeypatch.setattr("app.main.ENVIRONMENT", "development")
 
 
 def test_health_reports_only_real_capabilities():
@@ -14,77 +43,122 @@ def test_health_reports_only_real_capabilities():
     assert all(not provider["oauth"] and not provider["publishing"] for provider in body["providers"])
 
 
-def test_accounts_require_session_when_secret_missing(monkeypatch):
-    monkeypatch.setattr("app.main.SESSION_TOKEN", "")
-    response = client.get("/v1/accounts")
+def test_accounts_require_identity_configuration(monkeypatch):
+    monkeypatch.delenv("XFLUX_JWT_SECRET", raising=False)
+    monkeypatch.delenv("XFLUX_JWT_ISSUER", raising=False)
+    monkeypatch.delenv("XFLUX_JWT_AUDIENCE", raising=False)
+    response = client.get("/v1/accounts", headers=auth())
     assert response.status_code == 503
 
 
-def test_accounts_reject_wrong_session(monkeypatch):
-    monkeypatch.setattr("app.main.SESSION_TOKEN", "correct-secret")
-    response = client.get("/v1/accounts", headers={"Authorization": "Bearer wrong-secret"})
+def test_accounts_reject_missing_or_invalid_bearer(monkeypatch):
+    configure_identity(monkeypatch)
+    assert client.get("/v1/accounts").status_code == 401
+    assert client.get("/v1/accounts", headers={"Authorization": "Bearer invalid"}).status_code == 401
+
+
+def test_accounts_reject_wrong_signature(monkeypatch):
+    configure_identity(monkeypatch)
+    forged = jwt.encode(
+        {"sub": "user-1", "iss": "https://identity.xflux.test", "aud": "xflux-api",
+         "iat": int(time.time()), "exp": int(time.time()) + 300},
+        "attacker-secret-that-is-not-the-configured-secret",
+        algorithm="HS256",
+    )
+    response = client.get("/v1/accounts", headers={"Authorization": f"Bearer {forged}"})
     assert response.status_code == 401
 
 
-def test_production_rejects_short_session_secret(monkeypatch):
-    monkeypatch.setattr("app.main.ENVIRONMENT", "production")
-    monkeypatch.setattr("app.main.SESSION_TOKEN", "short")
-    monkeypatch.setenv("XFLUX_ALLOWED_ORIGINS", "https://app.example.com")
-    response = client.get("/v1/accounts", headers={"Authorization": "Bearer short"})
-    assert response.status_code == 503
+def test_accounts_reject_wrong_issuer_audience_and_expiry(monkeypatch):
+    configure_identity(monkeypatch)
+    now = int(time.time())
+    cases = [
+        token(iss="https://attacker.invalid"),
+        token(aud="another-api"),
+        token(exp=now - 30),
+        token(sub=""),
+    ]
+    for value in cases:
+        response = client.get("/v1/accounts", headers={"Authorization": f"Bearer {value}"})
+        assert response.status_code == 401
 
 
-def test_production_rejects_missing_origin_allowlist(monkeypatch):
+def test_production_requires_explicit_https_origin(monkeypatch):
+    configure_identity(monkeypatch)
     monkeypatch.setattr("app.main.ENVIRONMENT", "production")
-    monkeypatch.setattr("app.main.SESSION_TOKEN", "s" * 40)
     monkeypatch.delenv("XFLUX_ALLOWED_ORIGINS", raising=False)
-    response = client.get("/v1/accounts", headers={"Authorization": f"Bearer {'s' * 40}"})
-    assert response.status_code == 503
-
-
-def test_production_rejects_wildcard_origin(monkeypatch):
-    monkeypatch.setattr("app.main.ENVIRONMENT", "production")
-    monkeypatch.setattr("app.main.SESSION_TOKEN", "s" * 40)
+    assert client.get("/v1/accounts", headers=auth()).status_code == 503
     monkeypatch.setenv("XFLUX_ALLOWED_ORIGINS", "*")
-    response = client.get("/v1/accounts", headers={"Authorization": f"Bearer {'s' * 40}"})
-    assert response.status_code == 503
-
-
-def test_production_accepts_explicit_https_origin_and_strong_secret(monkeypatch):
-    monkeypatch.setattr("app.main.ENVIRONMENT", "production")
-    monkeypatch.setattr("app.main.SESSION_TOKEN", "s" * 40)
+    assert client.get("/v1/accounts", headers=auth()).status_code == 503
     monkeypatch.setenv("XFLUX_ALLOWED_ORIGINS", "https://app.example.com")
-    response = client.get("/v1/accounts", headers={"Authorization": f"Bearer {'s' * 40}"})
-    assert response.status_code == 200
+    assert client.get("/v1/accounts", headers=auth()).status_code == 200
 
 
-def test_account_listing_exposes_metadata_only(monkeypatch, tmp_path):
+def test_account_listing_is_isolated_by_verified_subject(monkeypatch, tmp_path):
     import app.main as backend
 
-    monkeypatch.setattr(backend, "SESSION_TOKEN", "test-secret")
+    configure_identity(monkeypatch)
     monkeypatch.setattr(backend, "DB_PATH", tmp_path / "xflux-test.sqlite3")
     with backend.connect_db() as db:
-        db.execute(
-            "INSERT INTO accounts (id, network, display_name, state, scopes_json, connected_at, expires_at, last_checked_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            ("acc-1", "youtube", "Canal de teste", "connected", '["youtube.upload"]', "2026-01-01T10:00:00Z", None, "2026-01-01T10:00:00Z"),
+        db.executemany(
+            "INSERT INTO accounts (id, owner_id, network, display_name, state, scopes_json, connected_at, expires_at, last_checked_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                ("acc-1", "user-1", "youtube", "Canal do usuário 1", "connected", '["youtube.upload"]', "2026-01-01T10:00:00Z", None, "2026-01-01T10:00:00Z"),
+                ("acc-2", "user-2", "instagram", "Conta do usuário 2", "connected", '["instagram_basic"]', "2026-01-02T10:00:00Z", None, "2026-01-02T10:00:00Z"),
+            ],
         )
-    response = client.get("/v1/accounts", headers={"Authorization": "Bearer test-secret"})
+
+    first = client.get("/v1/accounts", headers=auth("user-1"))
+    second = client.get("/v1/accounts", headers=auth("user-2"))
+    assert [a["id"] for a in first.json()["accounts"]] == ["acc-1"]
+    assert [a["id"] for a in second.json()["accounts"]] == ["acc-2"]
+    assert "access_token" not in first.text
+    assert "refresh_token" not in first.text
+
+
+def test_disconnect_cannot_delete_another_users_account(monkeypatch, tmp_path):
+    import app.main as backend
+
+    configure_identity(monkeypatch)
+    monkeypatch.setattr(backend, "DB_PATH", tmp_path / "disconnect-test.sqlite3")
+    with backend.connect_db() as db:
+        db.execute(
+            "INSERT INTO accounts (id, owner_id, network, display_name, state, scopes_json, connected_at, last_checked_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            ("private-account", "user-2", "instagram", "Private", "connected", "[]", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"),
+        )
+
+    response = client.delete("/v1/accounts/private-account", headers=auth("user-1"))
+    assert response.status_code == 204
+    with backend.connect_db() as db:
+        row = db.execute("SELECT owner_id FROM accounts WHERE id = ?", ("private-account",)).fetchone()
+    assert row["owner_id"] == "user-2"
+
+
+def test_legacy_accounts_are_not_exposed_after_owner_migration(monkeypatch, tmp_path):
+    import app.main as backend
+
+    configure_identity(monkeypatch)
+    path = tmp_path / "legacy.sqlite3"
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "CREATE TABLE accounts (id TEXT PRIMARY KEY, network TEXT NOT NULL, display_name TEXT NOT NULL, "
+            "state TEXT NOT NULL, scopes_json TEXT NOT NULL DEFAULT '[]', connected_at TEXT NOT NULL, "
+            "expires_at TEXT, last_checked_at TEXT NOT NULL)"
+        )
+        db.execute(
+            "INSERT INTO accounts (id, network, display_name, state, connected_at, last_checked_at) "
+            "VALUES ('old-1', 'youtube', 'Legacy', 'connected', '2026-01-01', '2026-01-01')"
+        )
+    monkeypatch.setattr(backend, "DB_PATH", path)
+    response = client.get("/v1/accounts", headers=auth())
     assert response.status_code == 200
-    account = response.json()["accounts"][0]
-    assert account["displayName"] == "Canal de teste"
-    assert "access_token" not in account
-    assert "refresh_token" not in account
-
-
-def test_disconnect_requires_valid_session(monkeypatch):
-    monkeypatch.setattr("app.main.SESSION_TOKEN", "test-secret")
-    response = client.delete("/v1/accounts/acc-1", headers={"Authorization": "Bearer wrong-secret"})
-    assert response.status_code == 401
+    assert response.json()["accounts"] == []
 
 
 def test_oauth_is_not_faked(monkeypatch):
-    monkeypatch.setattr("app.main.ENVIRONMENT", "development")
-    monkeypatch.setattr("app.main.SESSION_TOKEN", "test-secret")
-    response = client.post("/v1/oauth/youtube/start", headers={"Authorization": "Bearer test-secret"})
+    configure_identity(monkeypatch)
+    response = client.post("/v1/oauth/youtube/start", headers=auth())
     assert response.status_code == 503
     assert "not configured" in response.json()["detail"]
