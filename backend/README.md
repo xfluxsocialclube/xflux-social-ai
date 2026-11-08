@@ -25,7 +25,7 @@ A API fica em http://127.0.0.1:8000 e a documentação interativa em /docs.
 
 ## Preparação OAuth iniciada
 
-O backend valida JWT HS256 com assinatura, emissor, público, expiração e identificador de usuário obrigatórios. O `sub` verificado é a única origem do identificador de cliente; não existe parâmetro para o navegador escolher outro usuário. As contas agora têm `owner_id`, as listagens filtram pelo usuário autenticado e a exclusão também exige correspondência do proprietário. Bancos antigos recebem uma migração: registros sem proprietário ficam ocultos, sem serem atribuídos automaticamente.
+O backend valida JWT com emissor, público, expiração e identificador de usuário obrigatórios. Em desenvolvimento, aceita HS256 com segredo local. Em produção, exige JWKS em HTTPS e valida tokens RS256 usando a chave pública publicada pelo provedor de identidade; não existe fallback para o segredo de desenvolvimento. O `sub` verificado é a única origem do identificador de cliente; não existe parâmetro para o navegador escolher outro usuário. As contas agora têm `owner_id`, as listagens filtram pelo usuário autenticado e a exclusão também exige correspondência do proprietário. Bancos antigos recebem uma migração: registros sem proprietário ficam ocultos, sem serem atribuídos automaticamente.
 
 O backend também cria a tabela `oauth_states` e inclui utilitários para gerar `state` aleatório, armazenar somente seu hash e consumi-lo uma única vez. Isso é uma base de segurança, **não habilita OAuth nem cria o login do usuário**. Ainda é necessário integrar um provedor de identidade real, publicar o serviço com HTTPS e implementar callbacks oficiais, cofre criptografado e publicação. Os seis provedores continuam desativados.
 
@@ -37,13 +37,14 @@ O plano de implementação segura de Instagram e Facebook está em [docs/META_OA
 
 Além de `XFLUX_ENV=production`, configure no ambiente do servidor:
 
-- `XFLUX_JWT_SECRET`: chave HS256 com pelo menos 32 caracteres, guardada no gerenciador de segredos e compartilhada com o provedor emissor de tokens.
 - `XFLUX_JWT_ISSUER`: emissor exato configurado no provedor de identidade.
 - `XFLUX_JWT_AUDIENCE`: público esperado pelo backend, por exemplo `xflux-api`.
+- `XFLUX_JWKS_URL`: URL HTTPS do documento JWKS do provedor de identidade. Em produção, o backend aceita somente RS256 e consulta a chave pública pelo `kid`; a chave JWKS fica em cache por cinco minutos.
+- `XFLUX_JWT_SECRET`: somente para desenvolvimento local com HS256. Não é usado em produção.
 - `XFLUX_ALLOWED_ORIGINS`: lista explícita separada por vírgulas, contendo somente origens HTTPS do aplicativo e, se necessário, `tauri://localhost`. Não use `*` nem origens HTTP em produção.
 - `XFLUX_DATABASE_PATH`: caminho persistente para o arquivo SQLite, fora de diretórios temporários.
 
-O backend agora recusa chamadas autenticadas em produção quando a chave JWT está ausente/curta ou quando a lista de origens não foi definida com segurança. A validação JWT fornece identificação verificável para o backend, mas **não implementa tela de cadastro/login, recuperação de senha, emissão/renovação de tokens nem integração com provedor de identidade**. Não disponibilize o backend publicamente até conectar um emissor real e validar a configuração.
+O backend agora recusa chamadas autenticadas em produção quando a URL JWKS HTTPS, o emissor, o público ou a lista explícita de origens não estão configurados com segurança. A validação JWT fornece identificação verificável para o backend, mas **não implementa tela de cadastro/login, recuperação de senha, emissão/renovação de tokens nem integração com provedor de identidade**. Não disponibilize o backend publicamente até conectar um emissor real e validar a configuração.
 
 ## Antes de hospedar publicamente
 
