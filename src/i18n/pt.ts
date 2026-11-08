@@ -6,9 +6,9 @@ import { pubPt } from './publishing';
 /** Português brasileiro (idioma padrão). Define o conjunto de chaves de tradução. */
 export const pt = {
   'nav.quickNavigation': 'Navegação rápida',
-  'nav.previous': 'Seção anterior',
-  'nav.home': 'Ir para a página inicial',
-  'nav.next': 'Próxima seção',
+  'nav.previous': 'Voltar',
+  'nav.home': 'Início',
+  'nav.next': 'Avançar',
   'app.slogan': 'Seu conteúdo. Suas redes. Seu controle.',
   'nav.overview': 'Visão geral',
   'nav.library': 'Biblioteca de conteúdos',
