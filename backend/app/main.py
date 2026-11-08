@@ -90,8 +90,8 @@ def _meta_config() -> tuple[str, str, str, str]:
     app_secret = os.getenv("META_APP_SECRET", "").strip()
     redirect_uri = os.getenv("META_OAUTH_REDIRECT_URI", "").strip()
     version = os.getenv("META_GRAPH_VERSION", "v25.0").strip()
-    if not app_id or not app_secret or not redirect_uri:
-        raise HTTPException(status_code=503, detail="Meta OAuth credentials and callback URL are not configured")
+    if not app_id or not app_secret or not redirect_uri or not os.getenv("XFLUX_TOKEN_ENCRYPTION_KEY", "").strip():
+        raise HTTPException(status_code=503, detail="Meta OAuth credentials, callback URL and token encryption key must be configured")
     parsed = urlsplit(redirect_uri)
     if parsed.scheme != "https" and not (ENVIRONMENT != "production" and parsed.hostname in ("localhost", "127.0.0.1")):
         raise HTTPException(status_code=503, detail="Meta OAuth callback must use HTTPS")
@@ -115,7 +115,7 @@ def _meta_json(url: str, *, form: dict[str, str] | None = None) -> dict[str, Any
 
 @app.get("/v1/health")
 def health() -> dict[str, Any]:
-    meta_ready = all(os.getenv(key, "").strip() for key in ("META_APP_ID", "META_APP_SECRET", "META_OAUTH_REDIRECT_URI"))
+    meta_ready = all(os.getenv(key, "").strip() for key in ("META_APP_ID", "META_APP_SECRET", "META_OAUTH_REDIRECT_URI", "XFLUX_TOKEN_ENCRYPTION_KEY"))
     return {
         "service": "xflux-backend", "apiVersion": "1",
         "capabilities": ["accounts", "oauth"] if meta_ready else ["accounts"],
@@ -181,8 +181,7 @@ def meta_oauth_callback(
         app_id, app_secret, redirect_uri, version = _meta_config()
         with connect_db() as db:
             # A rede e o usuário são recuperados do state de uso único, nunca do navegador.
-            state_hash_network = None
-            # O callback consulta as duas redes porque a rede faz parte do state assinado/armazenado.
+            # A rede faz parte do state armazenado e é validada antes de recuperar o proprietário.
             owner_id = consume_oauth_state_for_callback(db, state=state, network="instagram")
             network = "instagram"
             if owner_id is None:
