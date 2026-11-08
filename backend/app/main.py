@@ -1,7 +1,6 @@
 """Base inicial do servidor XFLUX. OAuth/publicação permanecem desativados até integração real."""
 from __future__ import annotations
 
-import hmac
 import json
 import os
 import sqlite3
@@ -12,6 +11,7 @@ from urllib.parse import urlsplit
 from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.auth import authenticated_subject
 from app.oauth_state import ensure_oauth_state_table
 
 NETWORKS = ("instagram", "facebook", "tiktok", "shopee", "pinterest", "youtube")
@@ -68,34 +68,32 @@ def connect_db() -> sqlite3.Connection:
     db.row_factory = sqlite3.Row
     db.execute(
         "CREATE TABLE IF NOT EXISTS accounts ("
-        "id TEXT PRIMARY KEY, network TEXT NOT NULL, display_name TEXT NOT NULL, "
-        "state TEXT NOT NULL, scopes_json TEXT NOT NULL DEFAULT '[]', "
-        "connected_at TEXT NOT NULL, expires_at TEXT, last_checked_at TEXT NOT NULL)"
+        "id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, network TEXT NOT NULL, "
+        "display_name TEXT NOT NULL, state TEXT NOT NULL, "
+        "scopes_json TEXT NOT NULL DEFAULT '[]', connected_at TEXT NOT NULL, "
+        "expires_at TEXT, last_checked_at TEXT NOT NULL)"
+    )
+    # Migração compatível: registros antigos ficam sem proprietário e não são
+    # expostos a nenhum usuário autenticado.
+    columns = {row["name"] for row in db.execute("PRAGMA table_info(accounts)")}
+    if "owner_id" not in columns:
+        db.execute("ALTER TABLE accounts ADD COLUMN owner_id TEXT NOT NULL DEFAULT ''")
+    db.execute(
+        "CREATE INDEX IF NOT EXISTS idx_accounts_owner_connected "
+        "ON accounts(owner_id, connected_at DESC)"
     )
     ensure_oauth_state_table(db)
     db.commit()
     return db
 
 
-def require_session(authorization: str | None = Header(default=None)) -> None:
-    # A chave compartilhada é apenas uma barreira temporária para ambiente privado.
-    # Não representa autenticação multiusuário e não deve ser usada como login público.
-    if not SESSION_TOKEN or (
-        ENVIRONMENT == "production"
-        and (
-            len(SESSION_TOKEN) < 32
-            or not production_origins_are_safe()
-        )
-    ):
+def require_session(authorization: str | None = Header(default=None)) -> str:
+    if ENVIRONMENT == "production" and not production_origins_are_safe():
         raise HTTPException(
             status_code=503,
-            detail="Secure XFLUX session and production origin configuration are required",
+            detail="Secure production origin configuration is required",
         )
-    if authorization is None or not hmac.compare_digest(
-        authorization, f"Bearer {SESSION_TOKEN}"
-    ):
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
+    return authenticated_subject(authorization)
 
 @app.get("/v1/health")
 def health() -> dict[str, Any]:
@@ -110,12 +108,13 @@ def health() -> dict[str, Any]:
     }
 
 
-@app.get("/v1/accounts", dependencies=[Depends(require_session)])
-def accounts() -> dict[str, list[Any]]:
+@app.get("/v1/accounts")
+def accounts(owner_id: str = Depends(require_session)) -> dict[str, list[Any]]:
     with connect_db() as db:
         rows = db.execute(
             "SELECT id, network, display_name, state, scopes_json, connected_at, "
-            "expires_at, last_checked_at FROM accounts ORDER BY connected_at DESC"
+            "expires_at, last_checked_at FROM accounts WHERE owner_id = ? "
+            "ORDER BY connected_at DESC", (owner_id,)
         ).fetchall()
     return {
         "accounts": [
@@ -137,11 +136,10 @@ def accounts() -> dict[str, list[Any]]:
 @app.delete(
     "/v1/accounts/{account_id}",
     status_code=204,
-    dependencies=[Depends(require_session)],
 )
-def disconnect_account(account_id: str) -> Response:
+def disconnect_account(account_id: str, owner_id: str = Depends(require_session)) -> Response:
     with connect_db() as db:
-        db.execute("DELETE FROM accounts WHERE id = ?", (account_id,))
+        db.execute("DELETE FROM accounts WHERE id = ? AND owner_id = ?", (account_id, owner_id))
     return Response(status_code=204)
 
 
