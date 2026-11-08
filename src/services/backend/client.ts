@@ -15,7 +15,7 @@ const TOKEN_KEY = 'xflux.backend.token';
 
 export const getBackendUrl = () => loadSetting<string>('backend.url', '');
 export function setBackendUrl(url: string) { saveSetting('backend.url', url.trim().replace(/\/+$/, '')); }
-/** Token de SESSÃO do XFLUX (não é token de rede social). Fica só na sessão do navegador. */
+/** JWT de sessão XFLUX emitido pelo provedor de identidade configurado (não é token de rede social). Fica só na sessão do navegador. */
 export const getSessionToken = (): string => { try { return sessionStorage.getItem(TOKEN_KEY) ?? ''; } catch { return ''; } };
 export function setSessionToken(t: string) { try { if (t) sessionStorage.setItem(TOKEN_KEY, t); else sessionStorage.removeItem(TOKEN_KEY); } catch { /* sem armazenamento: segue sem token */ } }
 
