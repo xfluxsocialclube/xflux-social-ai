@@ -25,7 +25,9 @@ A API fica em http://127.0.0.1:8000 e a documentação interativa em /docs.
 
 ## Preparação OAuth iniciada
 
-O backend valida JWT HS256 com assinatura, emissor, público, expiração e identificador de usuário obrigatórios. O `sub` verificado é a única origem do identificador de cliente; não existe parâmetro para o navegador escolher outro usuário. As contas agora têm `owner_id`, as listagens filtram pelo usuário autenticado e a exclusão também exige correspondência do proprietário. Bancos antigos recebem uma migração: registros sem proprietário ficam ocultos, sem serem atribuídos automaticamente.\n\nO backend também cria a tabela `oauth_states` e inclui utilitários para gerar `state` aleatório, armazenar somente seu hash e consumi-lo uma única vez. Isso é uma base de segurança, **não habilita OAuth nem cria o login do usuário**. Ainda é necessário integrar um provedor de identidade real, publicar o serviço com HTTPS e implementar callbacks oficiais, cofre criptografado e publicação. Os seis provedores continuam desativados.
+O backend valida JWT HS256 com assinatura, emissor, público, expiração e identificador de usuário obrigatórios. O `sub` verificado é a única origem do identificador de cliente; não existe parâmetro para o navegador escolher outro usuário. As contas agora têm `owner_id`, as listagens filtram pelo usuário autenticado e a exclusão também exige correspondência do proprietário. Bancos antigos recebem uma migração: registros sem proprietário ficam ocultos, sem serem atribuídos automaticamente.
+
+O backend também cria a tabela `oauth_states` e inclui utilitários para gerar `state` aleatório, armazenar somente seu hash e consumi-lo uma única vez. Isso é uma base de segurança, **não habilita OAuth nem cria o login do usuário**. Ainda é necessário integrar um provedor de identidade real, publicar o serviço com HTTPS e implementar callbacks oficiais, cofre criptografado e publicação. Os seis provedores continuam desativados.
 
 ## Próxima integração: Meta
 
@@ -47,7 +49,8 @@ O backend agora recusa chamadas autenticadas em produção quando a chave JWT es
 
 - Definir segredo forte no gerenciador de segredos do provedor; nunca usar o exemplo.
 - Configurar HTTPS, domínio, CORS restrito e autenticação individual por usuário.
-- Integrar provedor de identidade real, fluxo de login/renovação e gestão de usuários; validar isolamento em todos os novos recursos.\n- Implementar OAuth oficial e cofre criptografado de tokens antes de habilitar conexão.
+- Integrar provedor de identidade real, fluxo de login/renovação e gestão de usuários; validar isolamento em todos os novos recursos.
+- Implementar OAuth oficial e cofre criptografado de tokens antes de habilitar conexão.
 - Implementar upload, fila durável, agendador e confirmação da plataforma antes de habilitar publicação.
 - Fazer revisão de segurança, privacidade/LGPD, backups e política de retenção.
 
