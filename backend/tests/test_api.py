@@ -284,7 +284,7 @@ def test_meta_callback_paginates_pages_and_encrypts_linked_instagram_tokens(monk
         },
     ])
     monkeypatch.setattr(backend, "_meta_json", lambda url, **kwargs: next(responses))
-    response = backend.meta_oauth_callback(code="authorization-code", state=state)
+    response = backend.meta_oauth_callback(code="authorization-code", state=state, error=None)
     assert response.status_code == 200, response.body.decode("utf-8")
     with backend.connect_db() as db:
         rows = db.execute(
