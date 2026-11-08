@@ -115,3 +115,41 @@ def consume_oauth_state(
     except Exception:
         db.rollback()
         raise
+
+
+
+def consume_oauth_state_for_callback(
+    db: sqlite3.Connection, *, state: str, network: str,
+    now: datetime | None = None,
+) -> str | None:
+    """Consome state no callback público e devolve o subject guardado no início."""
+    if not state or not network:
+        return None
+    checked_at = now or datetime.now(timezone.utc)
+    if checked_at.tzinfo is None:
+        raise ValueError("now precisa ter fuso horário")
+    state_hash = hashlib.sha256(state.encode("utf-8")).hexdigest()
+    timestamp = _utc_iso(checked_at)
+    db.execute("BEGIN IMMEDIATE")
+    try:
+        row = db.execute(
+            """SELECT session_subject, expires_at, consumed_at FROM oauth_states
+               WHERE state_hash = ? AND network = ?""",
+            (state_hash, network),
+        ).fetchone()
+        if row is None or not row["session_subject"] or row["consumed_at"] is not None or row["expires_at"] <= timestamp:
+            db.rollback()
+            return None
+        updated = db.execute(
+            "UPDATE oauth_states SET consumed_at = ? WHERE state_hash = ? AND consumed_at IS NULL",
+            (timestamp, state_hash),
+        )
+        if updated.rowcount != 1:
+            db.rollback()
+            return None
+        subject = row["session_subject"]
+        db.commit()
+        return subject
+    except Exception:
+        db.rollback()
+        raise
