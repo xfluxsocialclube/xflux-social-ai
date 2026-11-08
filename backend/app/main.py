@@ -12,6 +12,8 @@ from urllib.parse import urlsplit
 from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.oauth_state import ensure_oauth_state_table
+
 NETWORKS = ("instagram", "facebook", "tiktok", "shopee", "pinterest", "youtube")
 DB_PATH = Path(os.getenv("XFLUX_DATABASE_PATH", "./data/xflux.sqlite3"))
 SESSION_TOKEN = os.getenv("XFLUX_SESSION_TOKEN", "")
@@ -70,6 +72,7 @@ def connect_db() -> sqlite3.Connection:
         "state TEXT NOT NULL, scopes_json TEXT NOT NULL DEFAULT '[]', "
         "connected_at TEXT NOT NULL, expires_at TEXT, last_checked_at TEXT NOT NULL)"
     )
+    ensure_oauth_state_table(db)
     db.commit()
     return db
 
