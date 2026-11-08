@@ -7,10 +7,17 @@ O backend não emite tokens nem aceita um identificador de cliente no corpo.
 from __future__ import annotations
 
 import os
+from functools import lru_cache
 from urllib.parse import urlsplit
 
 import jwt
 from fastapi import HTTPException
+
+
+@lru_cache(maxsize=4)
+def _jwks_client(url: str) -> jwt.PyJWKClient:
+    """Reuse the JWKS client so its key-set cache survives between requests."""
+    return jwt.PyJWKClient(url, cache_jwk_set=True, lifespan=300, timeout=5)
 
 
 def _decode_production_token(token: str, issuer: str, audience: str) -> dict:
@@ -29,9 +36,7 @@ def _decode_production_token(token: str, issuer: str, audience: str) -> dict:
         )
 
     try:
-        signing_key = jwt.PyJWKClient(
-            jwks_url, cache_jwk_set=True, lifespan=300, timeout=5
-        ).get_signing_key_from_jwt(token).key
+        signing_key = _jwks_client(jwks_url).get_signing_key_from_jwt(token).key
     except jwt.PyJWKClientConnectionError:
         raise HTTPException(
             status_code=503, detail="Identity provider is temporarily unavailable"
