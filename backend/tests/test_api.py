@@ -247,3 +247,52 @@ def test_meta_oauth_is_not_advertised_without_encryption_key(monkeypatch):
     monkeypatch.delenv("XFLUX_TOKEN_ENCRYPTION_KEY", raising=False)
     body = client.get("/v1/health").json()
     assert all(not p["oauth"] for p in body["providers"] if p["network"] in ("instagram", "facebook"))
+
+
+def test_meta_callback_paginates_pages_and_encrypts_linked_instagram_tokens(monkeypatch, tmp_path):
+    import app.main as backend
+    from app.oauth_state import issue_oauth_state
+    from app.token_vault import decrypt_token
+    from cryptography.fernet import Fernet
+
+    monkeypatch.setattr(backend, "DB_PATH", tmp_path / "meta-callback.sqlite3")
+    monkeypatch.setenv("META_APP_ID", "meta-app-test")
+    monkeypatch.setenv("META_APP_SECRET", "meta-secret-test")
+    monkeypatch.setenv("META_OAUTH_REDIRECT_URI", "https://api.xflux.test/v1/oauth/meta/callback")
+    monkeypatch.setenv("META_GRAPH_VERSION", "v25.0")
+    monkeypatch.setenv("XFLUX_TOKEN_ENCRYPTION_KEY", Fernet.generate_key().decode())
+    with backend.connect_db() as db:
+        state = issue_oauth_state(db, network="instagram", session_subject="owner-ig")
+        db.commit()
+
+    responses = iter([
+        {"access_token": "short-user-token"},
+        {"access_token": "long-user-token", "expires_in": 5184000},
+        {
+            "data": [{
+                "id": "page-1", "name": "Loja Um", "access_token": "page-token-1",
+                "instagram_business_account": {"id": "ig-1"},
+            }],
+            "paging": {"next": "https://graph.facebook.com/v25.0/me/accounts?after=next"},
+        },
+        {
+            "data": [{
+                "id": "page-2", "name": "Loja Dois", "access_token": "page-token-2",
+                "instagram_business_account": {"id": "ig-2"},
+            }],
+        },
+    ])
+    monkeypatch.setattr(backend, "_meta_json", lambda url, **kwargs: next(responses))
+    response = backend.meta_oauth_callback(code="authorization-code", state=state)
+    assert response.status_code == 200
+    with backend.connect_db() as db:
+        rows = db.execute(
+            "SELECT network, display_name, encrypted_token, provider_account_id, expires_at "
+            "FROM accounts WHERE owner_id = ? ORDER BY provider_account_id",
+            ("owner-ig",),
+        ).fetchall()
+    assert [row["provider_account_id"] for row in rows] == ["ig-1", "ig-2"]
+    assert all(row["network"] == "instagram" for row in rows)
+    assert all(row["expires_at"] is None for row in rows)
+    assert decrypt_token(rows[0]["encrypted_token"]) == "page-token-1"
+    assert decrypt_token(rows[1]["encrypted_token"]) == "page-token-2"
