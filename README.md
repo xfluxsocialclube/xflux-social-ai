@@ -6,7 +6,7 @@
 Sistema de gerenciamento e automação de conteúdo para redes sociais. O projeto evoluiu por fases (1 a 5). Nenhuma integração real com redes sociais existe ainda: a publicação é **assistida** (o XFLUX planeja; o usuário publica e confirma). Os números do painel inicial continuam sendo **dados de exemplo**, identificados como tal.
 
 ## Tecnologias
-React 18, TypeScript, Vite e CSS puro (tema escuro). Sem serviços pagos. Empacotamento desktop com Tauri 2; a interface usa WebView2 no Windows. Backend Python/FastAPI + SQLite permanece uma etapa futura.
+React 18, TypeScript, Vite e CSS puro (tema escuro). Sem serviços pagos ou IA obrigatória. Empacotamento desktop com Tauri 2; a interface usa WebView2 no Windows. Existe um esqueleto de backend Python/FastAPI + SQLite para health e metadados de contas; autenticação multiusuário, isolamento por cliente, OAuth, cofre de tokens e publicação ainda não estão implementados.
 
 ## Instalação no Windows
 
@@ -84,4 +84,4 @@ O aplicativo já contém biblioteca, banco de legendas, associações, calculado
 
 
 ## Validação contínua
-O GitHub Actions executa a instalação das dependências e a compilação de produção a cada alteração na branch principal. O artefato `dist` é guardado em cada execução bem-sucedida.
+O GitHub Actions valida o backend e compila o instalador Windows nas branches `main` e `feat/**`, além de executar em pull requests direcionados à `main`. O instalador só é disponibilizado como artefato quando a geração NSIS termina com sucesso; a publicação em Releases ocorre apenas em alterações na `main`.
