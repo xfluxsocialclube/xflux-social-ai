@@ -211,6 +211,7 @@ def meta_oauth_callback(
         if not isinstance(pages, list):
             raise HTTPException(status_code=502, detail="Meta returned an invalid pages response")
         saved = 0
+        scopes = ["pages_show_list", "pages_read_engagement", "pages_manage_posts", "publish_video", "instagram_basic", "instagram_content_publish"]
         now = datetime.now(timezone.utc).isoformat()
         expires = datetime.fromtimestamp(datetime.now(timezone.utc).timestamp() + int(long_token.get("expires_in", 0)), timezone.utc).isoformat() if long_token.get("expires_in") else None
         with connect_db() as db:
@@ -227,6 +228,7 @@ def meta_oauth_callback(
                 if network == "instagram" and isinstance(ig, dict) and ig.get("id"):
                     targets.append(("instagram", str(ig["id"]), f"Instagram · {page_name}", page_token))
                 for target_network, provider_id, display_name, token_value in targets:
+                    db.execute("DELETE FROM accounts WHERE owner_id = ? AND network = ? AND provider_account_id = ?", (owner_id, target_network, provider_id))
                     account_id = str(uuid.uuid4())
                     db.execute(
                         """INSERT INTO accounts
