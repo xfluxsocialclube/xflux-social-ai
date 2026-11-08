@@ -56,3 +56,21 @@ O backend agora recusa chamadas autenticadas em produção quando a URL JWKS HTT
 - Fazer revisão de segurança, privacidade/LGPD, backups e política de retenção.
 
 **Não use este protótipo como servidor público de produção.** Não há login multiusuário, OAuth, cofre de tokens, upload de mídia ou worker de publicação nesta etapa.
+
+
+## Cofre criptográfico de tokens (base pronta, ainda não conectado ao OAuth)
+
+O módulo `app.token_vault` fornece criptografia autenticada Fernet para tokens de provedores externos:
+
+- `encrypt_token(valor)` produz um envelope cifrado e autenticado; o mesmo valor gera envelopes diferentes.
+- `decrypt_token(envelope)` rejeita dados adulterados ou cifrados com outra chave.
+- A chave é lida de `XFLUX_TOKEN_ENCRYPTION_KEY`; sem chave válida, a operação falha fechada.
+- O módulo não grava tokens, não registra valores em logs e não envia segredos ao frontend.
+
+Gere uma chave fora do repositório e configure-a diretamente no gerenciador de segredos do ambiente hospedado:
+
+    python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+
+Defina o resultado como `XFLUX_TOKEN_ENCRYPTION_KEY` no ambiente do servidor. **Não** coloque o valor em arquivos versionados, no instalador, em issues ou no chat. Planeje backup seguro e rotação de chave antes de armazenar tokens reais.
+
+Este módulo é somente o componente criptográfico: a tabela de contas ainda não persiste tokens cifrados, e OAuth, callback, rotação/revogação e publicação permanecem desativados até a implementação e testes de ponta a ponta.
