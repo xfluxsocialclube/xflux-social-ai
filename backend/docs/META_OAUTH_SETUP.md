@@ -19,7 +19,7 @@ Configure somente no gerenciador de segredos do servidor, nunca no aplicativo de
 1. Crie/configure um aplicativo Meta e adicione o produto Facebook Login.
 2. Configure OAuth redirect URI válido nas configurações do Facebook Login.
 3. Cadastre exatamente o valor de `META_OAUTH_REDIRECT_URI` nos URIs de redirecionamento válidos.
-4. Solicite as permissões usadas pelo fluxo: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `publish_video`, `instagram_basic` e `instagram_content_publish`.
+4. Solicite as permissões usadas pelo fluxo: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `publish_video`, `instagram_basic` e `instagram_content_publish`. Para a conexão básica, o backend exige `pages_show_list` e `pages_read_engagement`; para Instagram também exige `instagram_basic`. Permissões de publicação são registradas apenas se concedidas e serão necessárias quando a publicação for implementada.
 5. Conclua App Review e obtenha Advanced Access quando necessário para contas de usuários fora das funções de desenvolvimento do aplicativo.
 
 ## O que acontece no fluxo
@@ -27,7 +27,7 @@ Configure somente no gerenciador de segredos do servidor, nunca no aplicativo de
 - O usuário autenticado inicia a conexão; o servidor cria um state aleatório de uso único, vinculado à identidade verificada e com validade de 10 minutos.
 - O navegador é enviado ao diálogo oficial da Meta.
 - O callback consome o state uma única vez, troca o código por token de usuário e tenta obter o token de longa duração.
-- O servidor consulta todas as páginas autorizadas, seguindo a paginação Meta com validação do domínio. Para Facebook, salva cada Página; para Instagram, salva as contas profissionais vinculadas às Páginas.
+- O servidor consulta `/me/permissions` e exige as permissões mínimas para o tipo de conexão; só grava os escopos que a Meta realmente marcou como `granted`. Depois consulta todas as páginas autorizadas, seguindo a paginação Meta com validação do domínio. Para Facebook, salva cada Página; para Instagram, salva as contas profissionais vinculadas às Páginas.
 - Tokens de Página são criptografados com Fernet antes de serem persistidos. A API de contas nunca devolve tokens ao aplicativo. A validade do token de usuário não é copiada incorretamente como expiração do token da Página.
 - Uma nova autorização substitui o registro anterior da mesma conta/proprietário.
 
