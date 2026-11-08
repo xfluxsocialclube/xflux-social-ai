@@ -16,7 +16,6 @@ from app.oauth_state import ensure_oauth_state_table
 
 NETWORKS = ("instagram", "facebook", "tiktok", "shopee", "pinterest", "youtube")
 DB_PATH = Path(os.getenv("XFLUX_DATABASE_PATH", "./data/xflux.sqlite3"))
-SESSION_TOKEN = os.getenv("XFLUX_SESSION_TOKEN", "")
 ENVIRONMENT = os.getenv("XFLUX_ENV", "development").lower()
 app = FastAPI(title="XFLUX Backend", version="1.0.0")
 origins = [
@@ -94,6 +93,7 @@ def require_session(authorization: str | None = Header(default=None)) -> str:
             detail="Secure production origin configuration is required",
         )
     return authenticated_subject(authorization)
+
 
 @app.get("/v1/health")
 def health() -> dict[str, Any]:
