@@ -29,6 +29,14 @@ export function Networks() {
 
   const check = useCallback(async () => { setBusy(true); try { setSnap(await refreshSnapshot()); } finally { setBusy(false); } }, []);
   useEffect(() => { if (getBackendUrl()) void check(); }, [check]);
+  // Ao voltar do navegador após consentir na rede social, atualizar as contas sem exigir novo clique.
+  useEffect(() => {
+    const refreshOnReturn = () => {
+      if (getBackendUrl()) void refreshSnapshot().then(setSnap);
+    };
+    window.addEventListener('focus', refreshOnReturn);
+    return () => window.removeEventListener('focus', refreshOnReturn);
+  }, []);
 
   const toggle = (id: string) => { const next = chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id]; setChosen(next); setPlanNetworks(next); };
   const saveServer = async () => {
