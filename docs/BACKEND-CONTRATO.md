@@ -10,9 +10,9 @@ Especificação OpenAPI: `docs/openapi-backend.yaml`. Cliente: `src/services/bac
 - O cliente não envia cookies (`credentials: omit`).
 - `GET /v1/health` é público e informa capacidades reais.
 - Os endpoints de contas e início OAuth exigem `Authorization: Bearer <JWT>` assinado pelo emissor configurado, com `iss`, `aud`, `sub`, `iat` e `exp` válidos.
-- O JWT identifica a pessoa perante o backend; não é token de Instagram, Facebook ou outra rede. O backend valida assinatura HS256, issuer, audience e validade temporal.
+- O JWT identifica a pessoa perante o backend; não é token de Instagram, Facebook ou outra rede. Em desenvolvimento, o backend valida HS256 com segredo local; em produção, exige JWKS HTTPS e valida RS256 com chave pública, além de issuer, audience e validade temporal.
 - O servidor não devolve tokens de redes sociais.
-- Em produção, o backend recusa chamadas protegidas se `XFLUX_JWT_SECRET`, `XFLUX_JWT_ISSUER`, `XFLUX_JWT_AUDIENCE` ou a lista explícita `XFLUX_ALLOWED_ORIGINS` não estiverem configurados com segurança.
+- Em produção, o backend recusa chamadas protegidas se `XFLUX_JWKS_URL` HTTPS, `XFLUX_JWT_ISSUER`, `XFLUX_JWT_AUDIENCE` ou a lista explícita `XFLUX_ALLOWED_ORIGINS` não estiverem configurados com segurança. `XFLUX_JWT_SECRET` é somente para desenvolvimento.
 - CORS não substitui autenticação. O segredo de assinatura fica somente no servidor/emissor e nunca deve ser embutido no aplicativo desktop.
 
 ## Endpoints implementados
@@ -35,7 +35,7 @@ Especificação OpenAPI: `docs/openapi-backend.yaml`. Cliente: `src/services/bac
 ## Requisitos para habilitar multiusuário e OAuth
 
 1. Adotar provedor de identidade OIDC confiável ou autenticação equivalente, com validação de assinatura, issuer, audience, expiração e rotação de chaves.
-2. Derivar o identificador do usuário exclusivamente da identidade validada no servidor; nunca aceitar user_id enviado pelo cliente como autorização. **Base implementada:** validador JWT HS256 e extração de `sub`; ainda falta conectar um emissor OIDC real e ciclo de vida de sessão.
+2. Derivar o identificador do usuário exclusivamente da identidade validada no servidor; nunca aceitar user_id enviado pelo cliente como autorização. **Base implementada:** validador JWT HS256 em desenvolvimento e JWKS/RS256 em produção, com extração de `sub`; ainda falta conectar um emissor OIDC real e ciclo de vida de sessão.
 3. **Contas implementadas:** `owner_id` em contas, listagem e exclusão filtradas pelo `sub` autenticado. Aplicar a mesma regra a mídias, tokens, filas e jobs quando esses módulos forem persistidos no servidor.
 4. Conectar um provedor de identidade OIDC e usar tokens curtos/revogáveis. Não distribuir uma chave de assinatura compartilhada embutida no aplicativo desktop.
 5. Implementar OAuth state aleatório, uso único, expiração curta, vínculo à sessão e validação exata do redirect URI. Usar PKCE quando suportado pelo provedor.
