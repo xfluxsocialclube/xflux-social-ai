@@ -208,6 +208,27 @@ def meta_oauth_callback(
         access_token = str(long_token.get("access_token", ""))
         if not access_token:
             raise HTTPException(status_code=502, detail="Meta did not return a long-lived token")
+        permission_data = _meta_json(
+            f"https://graph.facebook.com/{version}/me/permissions?{urlencode({'access_token': access_token})}"
+        )
+        permission_rows = permission_data.get("data", [])
+        if not isinstance(permission_rows, list):
+            raise HTTPException(status_code=502, detail="Meta returned an invalid permissions response")
+        granted_scopes = sorted({
+            str(item["permission"]) for item in permission_rows
+            if isinstance(item, dict) and item.get("status") == "granted" and isinstance(item.get("permission"), str)
+        })
+        required_scopes = {"pages_show_list", "pages_read_engagement"}
+        if network == "instagram":
+            required_scopes.add("instagram_basic")
+        missing_scopes = sorted(required_scopes.difference(granted_scopes))
+        if missing_scopes:
+            return Response(
+                "<h2>XFLUX</h2><p>Permissões necessárias não concedidas: "
+                + html.escape(", ".join(missing_scopes))
+                + ". Reconecte e autorize as permissões solicitadas.</p>",
+                media_type="text/html", status_code=403,
+            )
         page_url = f"https://graph.facebook.com/{version}/me/accounts?{urlencode({'fields': 'id,name,access_token,tasks,instagram_business_account', 'access_token': access_token})}"
         pages: list[dict[str, Any]] = []
         # Meta usa paginação por cursor; validar o destino antes de seguir cada link.
@@ -228,7 +249,7 @@ def meta_oauth_callback(
         else:
             raise HTTPException(status_code=502, detail="Meta pagination limit exceeded")
         saved = 0
-        scopes = ["pages_show_list", "pages_read_engagement", "pages_manage_posts", "publish_video", "instagram_basic", "instagram_content_publish"]
+        scopes = granted_scopes
         now = datetime.now(timezone.utc).isoformat()
         # O prazo do token de usuário não é o prazo do token da Página; não atribuir expiração incorreta.
         with connect_db() as db:
