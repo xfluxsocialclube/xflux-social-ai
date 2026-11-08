@@ -14,9 +14,15 @@ export function Header({ titleKey, currentPage, onNavigate, onMenu }: { titleKey
       <button className="menu-btn" onClick={onMenu} aria-label={t('menu.open')}><Icon name="menu" /></button>
       <h1>{t(titleKey)}</h1>
       <nav className="header-navigation" aria-label={t('nav.quickNavigation')}>
-        <button className="nav-step-btn" disabled={!previous} onClick={() => previous && onNavigate(previous.id)} aria-label={t('nav.previous')} title={t('nav.previous')}><Icon name="back" /></button>
-        <button className="nav-step-btn" onClick={() => onNavigate('overview')} aria-label={t('nav.home')} title={t('nav.home')}><Icon name="home" /></button>
-        <button className="nav-step-btn" disabled={!next} onClick={() => next && onNavigate(next.id)} aria-label={t('nav.next')} title={t('nav.next')}><Icon name="next" /></button>
+        <button className="nav-step-btn" disabled={!previous} onClick={() => previous && onNavigate(previous.id)} aria-label={t('nav.previous')} title={t('nav.previous')}>
+          <Icon name="back" /><span>{t('nav.previous')}</span>
+        </button>
+        <button className="nav-step-btn" onClick={() => onNavigate('overview')} aria-label={t('nav.home')} title={t('nav.home')}>
+          <Icon name="home" /><span>{t('nav.home')}</span>
+        </button>
+        <button className="nav-step-btn" disabled={!next} onClick={() => next && onNavigate(next.id)} aria-label={t('nav.next')} title={t('nav.next')}>
+          <span>{t('nav.next')}</span><Icon name="next" />
+        </button>
       </nav>
       <LanguageSelect />
     </header>
