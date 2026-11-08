@@ -231,6 +231,31 @@ def meta_oauth_callback(
         scopes = ["pages_show_list", "pages_read_engagement", "pages_manage_posts", "publish_video", "instagram_basic", "instagram_content_publish"]
         now = datetime.now(timezone.utc).isoformat()
         # O prazo do token de usuário não é o prazo do token da Página; não atribuir expiração incorreta.
+        with connect_db() as db:
+            for page in pages:
+                if not page.get("id") or not page.get("access_token"):
+                    continue
+                page_id = str(page["id"])
+                page_name = str(page.get("name") or "Facebook Page")
+                page_token = str(page["access_token"])
+                targets: list[tuple[str, str, str, str]] = []
+                if network == "facebook":
+                    targets.append(("facebook", page_id, page_name, page_token))
+                ig = page.get("instagram_business_account")
+                if network == "instagram" and isinstance(ig, dict) and ig.get("id"):
+                    targets.append(("instagram", str(ig["id"]), f"Instagram · {page_name}", page_token))
+                for target_network, provider_id, display_name, token_value in targets:
+                    db.execute("DELETE FROM accounts WHERE owner_id = ? AND network = ? AND provider_account_id = ?", (owner_id, target_network, provider_id))
+                    db.execute(
+                        """INSERT INTO accounts
+                           (id, owner_id, network, display_name, state, scopes_json, connected_at,
+                            expires_at, last_checked_at, encrypted_token, provider_account_id)
+                           VALUES (?, ?, ?, ?, 'connected', ?, ?, NULL, ?, ?, ?)""",
+                        (str(uuid.uuid4()), owner_id, target_network, display_name, json.dumps(scopes),
+                         now, now, encrypt_token(token_value), provider_id),
+                    )
+                    saved += 1
+            db.commit()
         if saved == 0:
             detail = "Nenhuma Página do Facebook foi encontrada." if network == "facebook" else "Nenhuma conta profissional do Instagram vinculada a uma Página foi encontrada."
             return Response(f"<h2>XFLUX</h2><p>{html.escape(detail)} Verifique as permissões e a vinculação no Meta Business.</p>", media_type="text/html", status_code=200)
