@@ -115,7 +115,12 @@ def _meta_json(url: str, *, form: dict[str, str] | None = None) -> dict[str, Any
 
 @app.get("/v1/health")
 def health() -> dict[str, Any]:
-    meta_ready = all(os.getenv(key, "").strip() for key in ("META_APP_ID", "META_APP_SECRET", "META_OAUTH_REDIRECT_URI", "XFLUX_TOKEN_ENCRYPTION_KEY"))
+    identity_ready = bool(os.getenv("XFLUX_JWT_ISSUER", "").strip() and os.getenv("XFLUX_JWT_AUDIENCE", "").strip())
+    if ENVIRONMENT == "production":
+        identity_ready = identity_ready and urlsplit(os.getenv("XFLUX_JWKS_URL", "").strip()).scheme == "https"
+    else:
+        identity_ready = identity_ready and len(os.getenv("XFLUX_JWT_SECRET", "")) >= 32
+    meta_ready = identity_ready and all(os.getenv(key, "").strip() for key in ("META_APP_ID", "META_APP_SECRET", "META_OAUTH_REDIRECT_URI", "XFLUX_TOKEN_ENCRYPTION_KEY"))
     return {
         "service": "xflux-backend", "apiVersion": "1",
         "capabilities": ["accounts", "oauth"] if meta_ready else ["accounts"],
