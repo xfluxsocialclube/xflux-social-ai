@@ -268,6 +268,7 @@ def test_meta_callback_paginates_pages_and_encrypts_linked_instagram_tokens(monk
     responses = iter([
         {"access_token": "short-user-token"},
         {"access_token": "long-user-token", "expires_in": 5184000},
+        {"data": [{"permission": "pages_show_list", "status": "granted"}, {"permission": "pages_read_engagement", "status": "granted"}, {"permission": "instagram_basic", "status": "granted"}]},
         {
             "data": [{
                 "id": "page-1", "name": "Loja Um", "access_token": "page-token-1",
