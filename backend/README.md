@@ -7,7 +7,6 @@ Esta pasta contém o primeiro serviço executável do backend. Ele ainda **não 
 - GET /v1/health: informa que somente a consulta de contas está disponível; OAuth e publicação aparecem desativados para as seis redes.
 - GET /v1/accounts: exige JWT assinado e validado pelo servidor; retorna somente metadados pertencentes ao usuário autenticado.
 - DELETE /v1/accounts/{id}: só remove metadados pertencentes ao usuário autenticado.
-- DELETE /v1/accounts/{id}: remove metadados de uma conta.
 - SQLite local para metadados, CORS configurável e testes automatizados.
 
 ## Executar em desenvolvimento
@@ -42,7 +41,7 @@ Além de `XFLUX_ENV=production`, configure no ambiente do servidor:
 - `XFLUX_ALLOWED_ORIGINS`: lista explícita separada por vírgulas, contendo somente origens HTTPS do aplicativo e, se necessário, `tauri://localhost`. Não use `*` nem origens HTTP em produção.
 - `XFLUX_DATABASE_PATH`: caminho persistente para o arquivo SQLite, fora de diretórios temporários.
 
-O backend agora recusa chamadas autenticadas em produção quando o segredo é curto/ausente ou quando a lista de origens não foi definida com segurança. A validação JWT fornece identificação verificável para o backend, mas **não implementa tela de cadastro/login, recuperação de senha, emissão/renovação de tokens nem integração com provedor de identidade**. Não disponibilize o backend publicamente até conectar um emissor real e validar a configuração.
+O backend agora recusa chamadas autenticadas em produção quando a chave JWT está ausente/curta ou quando a lista de origens não foi definida com segurança. A validação JWT fornece identificação verificável para o backend, mas **não implementa tela de cadastro/login, recuperação de senha, emissão/renovação de tokens nem integração com provedor de identidade**. Não disponibilize o backend publicamente até conectar um emissor real e validar a configuração.
 
 ## Antes de hospedar publicamente
 
