@@ -162,3 +162,51 @@ def test_oauth_is_not_faked(monkeypatch):
     response = client.post("/v1/oauth/youtube/start", headers=auth())
     assert response.status_code == 503
     assert "not configured" in response.json()["detail"]
+
+
+def test_production_sessions_require_https_jwks_and_rs256(monkeypatch):
+    from types import SimpleNamespace
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    import app.main as backend
+
+    configure_identity(monkeypatch)
+    monkeypatch.setattr(backend, "ENVIRONMENT", "production")
+    monkeypatch.setenv("XFLUX_ENV", "production")
+    monkeypatch.setenv("XFLUX_ALLOWED_ORIGINS", "https://app.example.com")
+    monkeypatch.delenv("XFLUX_JWKS_URL", raising=False)
+
+    # Production must not silently fall back to the development shared secret.
+    assert client.get("/v1/accounts", headers=auth()).status_code == 503
+    monkeypatch.setenv("XFLUX_JWKS_URL", "http://identity.example.com/.well-known/jwks.json")
+    assert client.get("/v1/accounts", headers=auth()).status_code == 503
+
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    public_key = private_key.public_key()
+    now = int(time.time())
+    signed = jwt.encode(
+        {
+            "sub": "production-user",
+            "iss": "https://identity.xflux.test",
+            "aud": "xflux-api",
+            "iat": now,
+            "exp": now + 300,
+        },
+        private_key,
+        algorithm="RS256",
+        headers={"kid": "xflux-test-key"},
+    )
+
+    class FakeJwksClient:
+        def __init__(self, url, **kwargs):
+            assert url == "https://identity.xflux.test/.well-known/jwks.json"
+            assert kwargs["timeout"] == 5
+
+        def get_signing_key_from_jwt(self, received):
+            assert received == signed
+            return SimpleNamespace(key=public_key)
+
+    monkeypatch.setattr(jwt, "PyJWKClient", FakeJwksClient)
+    monkeypatch.setenv("XFLUX_JWKS_URL", "https://identity.xflux.test/.well-known/jwks.json")
+    response = client.get("/v1/accounts", headers={"Authorization": f"Bearer {signed}"})
+    assert response.status_code == 200
