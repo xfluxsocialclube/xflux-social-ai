@@ -21,6 +21,10 @@ Na pasta backend, crie um ambiente virtual, instale requirements.txt e execute:
 
 A API fica em http://127.0.0.1:8000 e a documentação interativa em /docs.
 
+## Preparação OAuth iniciada
+
+O backend agora cria a tabela `oauth_states` e inclui utilitários testados para gerar `state` aleatório, armazenar somente seu hash e consumi-lo uma única vez, com validade curta e vínculo à sessão informada. Isso é uma peça de segurança do fluxo, **não habilita OAuth nem substitui login individual**. Os seis provedores continuam com `oauth: false` e o endpoint de início continua recusando conexões até que a autenticação multiusuário, os callbacks oficiais, a troca de códigos e o cofre criptografado estejam prontos.
+
 ## Próxima integração: Meta
 
 O plano de implementação segura de Instagram e Facebook está em [docs/META_OAUTH_ROLLOUT.md](docs/META_OAUTH_ROLLOUT.md). Ele descreve requisitos internos do servidor; não peça App ID, segredo ou URL de servidor ao usuário final.
