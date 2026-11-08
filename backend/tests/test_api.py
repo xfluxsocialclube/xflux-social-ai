@@ -210,3 +210,40 @@ def test_production_sessions_require_https_jwks_and_rs256(monkeypatch):
     monkeypatch.setenv("XFLUX_JWKS_URL", "https://identity.xflux.test/.well-known/jwks.json")
     response = client.get("/v1/accounts", headers={"Authorization": f"Bearer {signed}"})
     assert response.status_code == 200
+
+
+def test_meta_oauth_start_uses_verified_session_and_one_time_state(monkeypatch, tmp_path):
+    from urllib.parse import parse_qs, urlparse
+    from cryptography.fernet import Fernet
+    import app.main as backend
+
+    configure_identity(monkeypatch)
+    monkeypatch.setattr(backend, "DB_PATH", tmp_path / "meta-oauth.sqlite3")
+    monkeypatch.setenv("META_APP_ID", "meta-app-test")
+    monkeypatch.setenv("META_APP_SECRET", "meta-secret-test")
+    monkeypatch.setenv("META_OAUTH_REDIRECT_URI", "https://api.xflux.test/v1/oauth/meta/callback")
+    monkeypatch.setenv("XFLUX_TOKEN_ENCRYPTION_KEY", Fernet.generate_key().decode())
+    response = client.post("/v1/oauth/instagram/start", headers=auth("verified-user"))
+    assert response.status_code == 200
+    result = response.json()
+    parsed = urlparse(result["authorizationUrl"])
+    params = parse_qs(parsed.query)
+    assert parsed.scheme == "https"
+    assert parsed.netloc == "www.facebook.com"
+    assert params["client_id"] == ["meta-app-test"]
+    assert params["redirect_uri"] == ["https://api.xflux.test/v1/oauth/meta/callback"]
+    assert result["expiresInSeconds"] == 600
+    with backend.connect_db() as db:
+        row = db.execute("SELECT network, session_subject, consumed_at FROM oauth_states").fetchone()
+    assert row["network"] == "instagram"
+    assert row["session_subject"] == "verified-user"
+    assert row["consumed_at"] is None
+
+
+def test_meta_oauth_is_not_advertised_without_encryption_key(monkeypatch):
+    monkeypatch.setenv("META_APP_ID", "meta-app-test")
+    monkeypatch.setenv("META_APP_SECRET", "meta-secret-test")
+    monkeypatch.setenv("META_OAUTH_REDIRECT_URI", "https://api.xflux.test/v1/oauth/meta/callback")
+    monkeypatch.delenv("XFLUX_TOKEN_ENCRYPTION_KEY", raising=False)
+    body = client.get("/v1/health").json()
+    assert all(not p["oauth"] for p in body["providers"] if p["network"] in ("instagram", "facebook"))
