@@ -15,7 +15,7 @@ export class BackendError extends Error {
 const TIMEOUT_MS = 8000;
 const TOKEN_KEY = 'xflux.backend.token';
 
-const BUILT_IN_BACKEND_URL = (import.meta.env.VITE_XFLUX_API_URL ?? '').trim().replace(/\\/+$/, '');
+const BUILT_IN_BACKEND_URL = (import.meta.env.VITE_XFLUX_API_URL ?? '').trim().replace(/\/+$/, '');
 export const getBackendUrl = () => BUILT_IN_BACKEND_URL || loadSetting<string>('backend.url', '');
 export function setBackendUrl(url: string) { saveSetting('backend.url', url.trim().replace(/\/+$/, '')); }
 /** JWT de sessão XFLUX emitido pelo provedor de identidade configurado (não é token de rede social). Fica só na sessão do navegador. */
