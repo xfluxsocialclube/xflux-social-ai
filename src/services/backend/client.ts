@@ -1,6 +1,8 @@
 /**
- * Cliente do servidor do XFLUX. Só funciona se o usuário (ou a empresa) configurar o endereço do servidor.
- * Sem servidor configurado, NADA é conectado e nada é simulado. Nenhum segredo de rede social passa por aqui.
+ * Cliente do servidor do XFLUX. O endereço público é injetado na compilação pelo mantenedor
+ * (VITE_XFLUX_API_URL); o usuário final não precisa configurar servidor ou chave.
+ * A configuração local continua disponível apenas para testes/administração. Sem servidor,
+ * NADA é conectado e nada é simulado. Nenhum segredo de rede social passa por aqui.
  */
 import { loadSetting, saveSetting } from '../settings';
 import { parseAccounts, parseHealth, parseOAuthStart, type HealthResponse, type OAuthStartResponse } from './contract';
@@ -13,7 +15,8 @@ export class BackendError extends Error {
 const TIMEOUT_MS = 8000;
 const TOKEN_KEY = 'xflux.backend.token';
 
-export const getBackendUrl = () => loadSetting<string>('backend.url', '');
+const BUILT_IN_BACKEND_URL = (import.meta.env.VITE_XFLUX_API_URL ?? '').trim().replace(/\\/+$/, '');
+export const getBackendUrl = () => BUILT_IN_BACKEND_URL || loadSetting<string>('backend.url', '');
 export function setBackendUrl(url: string) { saveSetting('backend.url', url.trim().replace(/\/+$/, '')); }
 /** JWT de sessão XFLUX emitido pelo provedor de identidade configurado (não é token de rede social). Fica só na sessão do navegador. */
 export const getSessionToken = (): string => { try { return sessionStorage.getItem(TOKEN_KEY) ?? ''; } catch { return ''; } };
