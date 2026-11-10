@@ -1,18 +1,15 @@
-# Estado atual do backend (atualizado em 08/11/2026)
+# Estado atual do backend (atualizado em 10/11/2026)
 
-> Esta seção prevalece sobre descrições históricas mais abaixo, que podem mencionar etapas anteriores.
+O backend contém um fluxo inicial de OAuth da Meta (Facebook/Instagram) e agora suporta **sessões independentes por instalação do XFLUX**, sem exigir cadastro/login em um provedor central. O aplicativo cria uma chave aleatória local e recebe uma sessão curta assinada pelo servidor. Cada instalação tem seu próprio identificador e suas próprias contas conectadas.
 
-O backend **já contém uma implementação inicial de OAuth da Meta (Facebook/Instagram)**: início de autorização, estado de uso único vinculado à sessão, callback, troca/validação de tokens, consulta de Páginas/contas Instagram e armazenamento de token criptografado. O recurso só é habilitado quando a configuração necessária está presente. O usuário final ainda não consegue utilizá-lo porque falta conectar um emissor de identidade/login que forneça o JWT exigido pelo backend, além de implantar o serviço HTTPS e configurar o aplicativo Meta. Isso ainda não equivale a publicação automática pronta para produção.
+O serviço seguro é necessário somente para concluir OAuth que depende de segredo privado e callback HTTPS. Ele não armazena vídeos, legendas, planilhas ou calendário do cliente. Tokens de redes sociais são armazenados criptografados no banco do serviço e nunca retornam ao frontend.
 
-Também existem autenticação JWT (HS256 apenas em desenvolvimento; RS256/JWKS HTTPS em produção), isolamento de contas por proprietário, cofre Fernet e endpoints de consulta/desconexão.
+**Ainda dependem de configuração externa:** hospedagem HTTPS, segredo de sessão, chave Fernet, credenciais e aprovação do aplicativo Meta, URL de callback e configuração de produção. Sem esses dados, o botão de conexão permanece corretamente bloqueado. Não existem credenciais reais no repositório.
 
-**Ainda não estão concluídos:** interface de cadastro/login e emissão/renovação de sessão; hospedagem e provedor de identidade reais; testes OAuth com aplicativo Meta aprovado; publicação pela API; upload remoto, fila durável e agendador; integrações reais de TikTok, Pinterest, YouTube Shorts e Shopee Video.
+**Ainda não estão concluídos:** publicação por API, upload remoto de mídia, fila durável, agendador, integrações OAuth reais de TikTok/Pinterest/YouTube e publicação oficial da Shopee Video. Conectar uma conta não significa que a publicação automática esteja pronta.
 
-A dependência `cryptography` agora está declarada em `requirements.txt`, pois o backend importa o cofre Fernet durante a inicialização.
+A variável XFLUX_DEVICE_SESSION_SECRET (mínimo 32 caracteres) permite emitir sessões curtas por instalação. Configure-a somente no servidor. XFLUX_JWT_ISSUER e XFLUX_JWT_AUDIENCE identificam o emissor e o público. O endpoint POST /v1/device/session recebe somente uma chave aleatória de instalação; aplique rate limit no proxy HTTPS.
 
-Para preparar uma implantação containerizada, consulte [DEPLOY.md](DEPLOY.md). Os arquivos Docker não provisionam credenciais, domínio, identidade ou aprovação de plataformas.
-
----
 
 # Servidor XFLUX — base inicial
 
