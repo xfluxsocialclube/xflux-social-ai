@@ -114,7 +114,7 @@ def _meta_json(url: str, *, form: dict[str, str] | None = None) -> dict[str, Any
 
 
 @app.post("/v1/device/session")
-def create_device_session(payload: dict[str, Any]) -> dict[str, str]:
+def create_device_session(payload: dict[str, Any]) -> dict[str, Any]:
     """Troca uma chave aleatória local por uma sessão curta; nenhum login central é solicitado."""
     installation_key = payload.get("installationKey")
     if not isinstance(installation_key, str) or len(installation_key) != 64:
