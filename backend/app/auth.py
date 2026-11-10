@@ -1,8 +1,9 @@
-"""Validação de sessões XFLUX emitidas por um provedor de identidade.
+"""Validação e emissão de sessões individuais por instalação do XFLUX.
 
-Em desenvolvimento aceita HS256 com segredo local. Em produção exige JWKS
-HTTPS e RS256; a chave pública é obtida do provedor, nunca do navegador.
-O backend não emite tokens nem aceita um identificador de cliente no corpo.
+O servidor assina sessões curtas com um segredo privado. A instalação apresenta
+uma chave aleatória de alta entropia, guardada localmente; o subject é derivado
+por hash. Nunca se recebe um ID de cliente escolhido livremente no corpo.
+Tokens externos/JWKS permanecem suportados como modo alternativo legado.
 """
 from __future__ import annotations
 
@@ -108,7 +109,7 @@ def authenticated_subject(authorization: str | None) -> str:
     if not issuer or not audience:
         raise HTTPException(
             status_code=503,
-            detail="Identity provider issuer and audience are required",
+            detail="XFLUX session issuer and audience are required",
         )
 
     token = authorization[7:].strip()
