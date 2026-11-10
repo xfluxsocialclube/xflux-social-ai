@@ -82,19 +82,19 @@ O aplicativo já contém biblioteca, banco de legendas, associações, calculado
 - Funcionalidades, regras, pendências, dependências e relatório de testes: `docs/FASE4.md`.
 
 ## Fase 5 — Integrações e publicação (estrutura e publicação assistida)
-- **Central de integrações** (menu Redes sociais): servidor do XFLUX, estado de cada conta (conectada, perto de expirar, expirada, revogada, com erro), requisitos oficiais de cada rede com fontes, e o que falta para publicar automaticamente.
+- **Central de integrações** (menu Redes sociais): seleção de redes para o plano, requisitos oficiais de cada plataforma, estado honesto de conexão local e o que falta para publicar automaticamente. Não depende de servidor central.
 - **Fila de publicações** com painel de status, histórico de tentativas, tratamento de erros e nova tentativa; **publicação assistida** integrada ao calendário.
-- Nenhuma rede é publicada automaticamente ainda e nenhuma aparece como conectada sem um servidor do XFLUX confirmar. "Publicada" = confirmada pelo usuário.
-- Arquitetura do servidor e do agendador em nuvem (futuro), contrato da API e pesquisa oficial de cada plataforma: `docs/ARQUITETURA-FASE5.md`, `docs/BACKEND-CONTRATO.md`, `docs/openapi-backend.yaml`, `docs/INTEGRACOES-OFICIAIS.md`.
+- Nenhuma rede é publicada automaticamente nesta versão. Nenhuma aparece como conectada sem autorização local real. "Publicada" = confirmada pelo usuário até existir confirmação oficial da API.
+- Arquitetura local-first, pesquisa oficial das plataformas e limites das integrações: `docs/ARQUITETURA-FASE5.md` e `docs/INTEGRACOES-OFICIAIS.md`. Os contratos de backend são documentos legados.
 - Funcionalidades, dependências externas, pendências e relatório de testes: `docs/FASE5.md`. Sem banco novo e sem dependências novas.
 
 
 ## Fase 6 — Conexões guiadas (interface e preparação de implantação)
 
 - Navegação rápida Voltar, Início e Avançar no cabeçalho.
-- Configuração técnica escondida na área avançada; o endereço central pode ser injetado pelo mantenedor na compilação com `VITE_XFLUX_API_URL`, sem exigir que o usuário final configure servidor.
-- Ao voltar do navegador OAuth, a Central de integrações atualiza automaticamente o estado das contas.
-- Instagram/Facebook têm fluxo Meta no backend por Facebook Login; Instagram exige conta profissional vinculada a Página. TikTok e Shopee Video continuam assistidos, sem OAuth/publicação implementados.
+- A Central de integrações não solicita URL, token, chave nem configuração de servidor.
+- A atualização de estado por OAuth local será habilitada quando os fluxos nativos de cada plataforma estiverem implementados.
+- Os fluxos OAuth locais e publicação real ainda precisam ser implementados e testados rede por rede. O protótipo Meta no backend é legado e não está integrado ao aplicativo.
 - A arquitetura prioriza hospedagem gratuita, mas nenhum serviço gratuito é declarado como implantado ou permanente antes da validação dos limites, persistência e disponibilidade.
 - Escopo, limitações, implantação e critérios de aceite: `docs/FASE6.md`.
 
