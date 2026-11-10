@@ -6,7 +6,7 @@ import { useI18n } from '../i18n/I18nContext';
 import { fmt } from '../i18n/format';
 import type { TranslationKey } from '../i18n/pt';
 import { connectionOf, emptySnapshot, loadSnapshot, refreshSnapshot, type BackendSnapshot } from '../services/backend/accounts';
-import { BackendError, disconnectAccount, getBackendUrl, getSessionToken, setBackendUrl, setSessionToken, startOAuth, validateBackendUrl } from '../services/backend/client';
+import { BackendError, disconnectAccount, getBackendUrl, setBackendUrl, startOAuth, validateBackendUrl } from '../services/backend/client';
 import { ADAPTERS } from '../services/publishing/adapters';
 import { getFacts } from '../services/publishing/catalog';
 import { planRoute } from '../services/publishing/delivery';
@@ -20,7 +20,7 @@ export function Networks() {
   const { t, locale } = useI18n();
   const [chosen, setChosen] = useState<string[]>(() => getPlanNetworks());
   const [snap, setSnap] = useState<BackendSnapshot>(() => loadSnapshot());
-  const [url, setUrl] = useState(getBackendUrl()); const [token, setToken] = useState(getSessionToken());
+  const [url, setUrl] = useState(getBackendUrl());
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState<string | null>(null); const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [oauth, setOauth] = useState<{ network: string; url: string; host: string } | null>(null);
@@ -42,7 +42,7 @@ export function Networks() {
   const saveServer = async () => {
     setErr(null); setMsg(null);
     if (url.trim() && !validateBackendUrl(url)) { setErr(t('pub.srv.invalid')); return; }
-    setBackendUrl(url); setSessionToken(token.trim());
+    setBackendUrl(url);
     setSnap(emptySnapshot()); if (url.trim()) await check(); else setSnap(await refreshSnapshot());
   };
   const errText = (e: unknown) => t(`pub.srv.err.${e instanceof BackendError ? e.kind : 'unreachable'}` as TranslationKey);
@@ -75,7 +75,7 @@ export function Networks() {
         {serverOpen && <div id="xflux-server-advanced" className="stack">
           <div className="form">
             <label className="wide">{t('pub.srv.url')}<input className="search" placeholder="https://" value={url} onChange={(e) => setUrl(e.target.value)} /></label>
-            <label className="wide">{t('pub.srv.token')}<input className="search" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} /><small className="muted">{t('pub.srv.tokenHint')}</small></label>
+            <small className="muted">A sessão desta instalação é criada automaticamente e fica vinculada somente a este dispositivo. Não é necessário copiar tokens.</small>
           </div>
           <div className="toolbar"><button className="btn" disabled={busy} onClick={saveServer}>{t('pub.srv.save')}</button><button className="btn ghost" disabled={busy || !snap.url} onClick={check}>{t('pub.srv.test')}</button></div>
         </div>}
