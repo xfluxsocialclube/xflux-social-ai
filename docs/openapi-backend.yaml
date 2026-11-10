@@ -3,7 +3,7 @@ info:
   title: XFLUX Backend (contrato implementado v1)
   version: "1"
   description: >
-    Estado real do protótipo. Endpoints protegidos validam JWT HS256 e isolam metadados de contas pelo subject verificado. Ainda não há emissor OIDC/login conectado. OAuth e publicação estão desativados.
+    Estado real do protótipo. Endpoints protegidos validam JWT e isolam contas pelo subject verificado. O fluxo OAuth inicial da Meta (Facebook/Instagram) está implementado, mas depende de emissor JWT, credenciais Meta, callback HTTPS e chave Fernet configurados. Publicação ainda está desativada.
 servers:
   - url: https://api.example.invalid
 security: []
@@ -69,8 +69,21 @@ paths:
             type: string
             enum: [instagram, facebook, tiktok, shopee, pinterest, youtube]
       responses:
+        "200":
+          description: URL oficial de autorização Meta e validade do state.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authorizationUrl, expiresInSeconds]
+                properties:
+                  authorizationUrl:
+                    type: string
+                    format: uri
+                  expiresInSeconds:
+                    type: integer
         "503":
-          description: OAuth ainda não configurado; nenhuma autorização foi iniciada
+          description: Sessão, credenciais Meta ou configuração OAuth ausentes; rede não suportada
         "401":
           description: Sessão ausente ou incorreta
         "404":
@@ -96,7 +109,7 @@ components:
           type: array
           items:
             type: string
-            enum: [accounts]
+            enum: [accounts, oauth]
         providers:
           type: array
           items:
@@ -107,7 +120,7 @@ components:
                 type: string
               oauth:
                 type: boolean
-                enum: [false]
+                enum: [false, true]
               publishing:
                 type: boolean
                 enum: [false]
