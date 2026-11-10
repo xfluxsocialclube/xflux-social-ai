@@ -87,7 +87,7 @@ export const pubPt = {
   'pub.fact.youtube.4': 'Sem informar a privacidade, o padrão é público. A página oficial atual diz que vídeos de projetos não verificados não ficam restritos ao modo privado; versões antigas e guias de terceiros dizem o contrário. Confirme antes de lançar.',
   'pub.fact.youtube.5': 'Valem os Termos de Serviço e as Políticas para Desenvolvedores da API do YouTube; pode haver auditoria de conformidade para ampliar cota.',
   /* ajuda */
-  'help.q8': 'Por que minhas redes aparecem como "Não conectada"?', 'help.a8': 'Porque conectar de verdade exige um servidor do XFLUX com as autorizações oficiais de cada rede. Enquanto ele não existe, o XFLUX não finge conexões: você publica de forma assistida.',
+  'help.q8': 'Por que minhas redes aparecem como "Não conectada"?', 'help.a8': 'Porque algumas redes exigem um serviço técnico seguro para concluir o OAuth. Esse serviço não guarda seus vídeos nem suas legendas. Até a integração oficial estar configurada e validada, a publicação permanece assistida.',
   'help.q9': 'Como funciona a publicação assistida?', 'help.a9': 'Na Fila de publicações, abra o item, copie os dados, publique na própria rede e clique em "Marcar como publicada". Se algo der errado, use "Não consegui publicar" para registrar o motivo.',
   'help.q10': 'O que significam os estados de uma conta?', 'help.a10': 'Conectada: autorização válida. Perto de expirar: reconecte antes do prazo. Expirada ou revogada: é preciso reconectar. Com erro: veja o último erro informado. Não conectada: nenhum servidor confirmou essa conta.',
 } as const;
