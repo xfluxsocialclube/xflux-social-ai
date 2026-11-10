@@ -3,7 +3,11 @@
 > Seu conteúdo. Suas redes. Seu controle.
 
 ## O que é
-Sistema de gerenciamento e automação de conteúdo para redes sociais. O projeto evoluiu por fases (1 a 6). A Central de integrações e o fluxo guiado estão implementados, mas conexões reais dependem da implantação do backend e das credenciais/aprovações oficiais. Sem esses serviços, a publicação permanece **assistida** (o XFLUX planeja; o usuário publica e confirma). Os números do painel inicial continuam sendo **dados de exemplo**, identificados como tal.
+O XFLUX é um robô individual de marketing e automação de postagens. Cada pessoa instala seu próprio aplicativo, conecta suas próprias redes e escolhe onde manter vídeos, imagens, planilhas de legendas e agendamentos: computador, celular, Google Drive, OneDrive ou servidor particular. O XFLUX organiza a biblioteca, prepara a fila e executa as publicações permitidas pelas APIs oficiais.
+
+**Arquitetura local-first:** os arquivos, vídeos, legendas, calendário, fila e histórico pertencem ao usuário e permanecem no armazenamento escolhido por ele. O XFLUX não é um servidor central de vídeos nem uma biblioteca compartilhada. Algumas plataformas podem exigir um pequeno serviço técnico seguro para OAuth, callbacks ou proteção de segredos; esse serviço não deve armazenar a biblioteca do usuário.
+
+O projeto evoluiu por fases (1 a 6). A Central de integrações está implementada, mas conexões reais ainda dependem dos fluxos oficiais, das credenciais/aprovações de cada plataforma e, quando tecnicamente exigido, da ativação do serviço seguro de autorização. Enquanto uma integração não estiver validada, a publicação permanece **assistida** (o XFLUX planeja; o usuário publica e confirma). Os números do painel inicial continuam sendo **dados de exemplo**, identificados como tal.
 
 ## Tecnologias
 React 18, TypeScript, Vite e CSS puro (tema escuro). Sem serviços pagos ou IA obrigatória. Empacotamento desktop com Tauri 2; a interface usa WebView2 no Windows. Existe um backend Python/FastAPI + SQLite com isolamento de contas por identidade verificada, proteção de sessão em produção, fluxo OAuth Meta e cofre criptografado de tokens. Ele ainda precisa de provedor de identidade, implantação HTTPS e credenciais oficiais; publicação automática não está implementada.
