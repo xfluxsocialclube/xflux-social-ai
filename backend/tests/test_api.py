@@ -297,3 +297,33 @@ def test_meta_callback_paginates_pages_and_encrypts_linked_instagram_tokens(monk
     assert all(row["expires_at"] is None for row in rows)
     assert decrypt_token(rows[0]["encrypted_token"]) == "page-token-1"
     assert decrypt_token(rows[1]["encrypted_token"]) == "page-token-2"
+
+
+def test_device_session_is_issued_without_central_login(monkeypatch, tmp_path):
+    import app.main as backend
+
+    monkeypatch.setenv("XFLUX_DEVICE_SESSION_SECRET", "device-session-signing-secret-at-least-32")
+    monkeypatch.setenv("XFLUX_JWT_ISSUER", "https://identity.xflux.test")
+    monkeypatch.setenv("XFLUX_JWT_AUDIENCE", "xflux-api")
+    monkeypatch.setattr(backend, "ENVIRONMENT", "development")
+    monkeypatch.setattr(backend, "DB_PATH", tmp_path / "device-session.sqlite3")
+
+    installation_key = "a" * 64
+    issued = client.post("/v1/device/session", json={"installationKey": installation_key})
+    assert issued.status_code == 200
+    body = issued.json()
+    assert body["expiresInSeconds"] == 86400
+    assert "installationKey" not in issued.text
+    assert "device-session-signing-secret" not in issued.text
+
+    response = client.get("/v1/accounts", headers={"Authorization": f"Bearer {body['accessToken']}"})
+    assert response.status_code == 200
+    assert response.json() == {"accounts": []}
+
+
+def test_device_session_rejects_invalid_installation_keys(monkeypatch):
+    monkeypatch.setenv("XFLUX_DEVICE_SESSION_SECRET", "device-session-signing-secret-at-least-32")
+    monkeypatch.setenv("XFLUX_JWT_ISSUER", "https://identity.xflux.test")
+    monkeypatch.setenv("XFLUX_JWT_AUDIENCE", "xflux-api")
+    response = client.post("/v1/device/session", json={"installationKey": "not-a-random-key"})
+    assert response.status_code == 400
