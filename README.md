@@ -9,8 +9,10 @@ O XFLUX é um robô individual de marketing e automação de postagens. Cada pes
 
 O projeto evoluiu por fases (1 a 6). A Central de integrações está implementada, mas conexões reais ainda dependem dos fluxos oficiais, das credenciais/aprovações de cada plataforma e, quando tecnicamente exigido, da ativação do serviço seguro de autorização. Enquanto uma integração não estiver validada, a publicação permanece **assistida** (o XFLUX planeja; o usuário publica e confirma). Os números do painel inicial continuam sendo **dados de exemplo**, identificados como tal.
 
-## Tecnologias
-React 18, TypeScript, Vite e CSS puro (tema escuro). Sem serviços pagos ou IA obrigatória. Empacotamento desktop com Tauri 2; a interface usa WebView2 no Windows. Existe um backend Python/FastAPI + SQLite com isolamento de contas por identidade verificada, proteção de sessão em produção, fluxo OAuth Meta e cofre criptografado de tokens. Ele ainda precisa de provedor de identidade, implantação HTTPS e credenciais oficiais; publicação automática não está implementada.
+## Tecnologias e estado da migração local
+React 18, TypeScript, Vite e CSS puro (tema escuro). O repositório inclui empacotamento desktop com Tauri 2 e WebView2 no Windows. **Atenção:** o invólucro Tauri e o instalador existem, mas a biblioteca ainda usa IndexedDB e a implementação web de acesso a pastas; a migração para persistência e acesso nativos Tauri ainda não foi concluída. O objetivo é concluir essa migração sem centralizar vídeos, legendas ou histórico.
+
+Existe também um backend Python/FastAPI + SQLite com fluxo OAuth Meta inicial e cofre criptográfico. Ele não é requisito para biblioteca, calendário ou fila locais e não deve receber a biblioteca de mídia do cliente. Sua necessidade deve ser avaliada por plataforma, apenas para os fluxos que realmente exigirem serviço técnico seguro. Publicação automática ainda não está implementada.
 
 ## Instalação no Windows
 
@@ -63,7 +65,7 @@ O aplicativo já contém biblioteca, banco de legendas, associações, calculado
 
 ## Fase 2 — Biblioteca de mídias (implementada)
 - Importação de várias imagens e vídeos, miniaturas, pré-visualização, nome/formato/tamanho/data, categorias, pesquisa, filtro por tipo e categoria, exclusão com confirmação e detecção de duplicados por hash SHA-256.
-- Arquivos copiados para uma pasta do computador (`XFLUX-Biblioteca/ANO/MÊS/`), escolhida pelo usuário. Metadados, categorias, hashes e histórico ficam em IndexedDB (persistem após fechar o app).
+- Na implementação atual, arquivos são copiados para uma pasta escolhida pelo usuário (`XFLUX-Biblioteca/ANO/MÊS/`). Metadados, categorias, hashes e histórico ficam em IndexedDB. Isso é persistência local do navegador, não ainda a camada nativa definitiva do Tauri.
 - Histórico de utilização e lógica de proteção contra repetição (dias configuráveis em Configurações), prontos para os módulos de publicação usarem. Ainda não há publicações, então esse histórico começa vazio.
 - Contrato de IA em `src/services/ai.ts`; nenhum modelo conectado.
 - Detalhes, limitações e testes: `docs/FASE2.md`.
@@ -76,7 +78,7 @@ O aplicativo já contém biblioteca, banco de legendas, associações, calculado
 - **FLUX Caption Bank**: importação de legendas por XLSX/CSV com mapeamento de colunas, validação, duplicadas, edição, filtros, cópia, controle de uso e exportação.
 - **Associar vídeos e legendas** com sugestões que mostram o motivo e tela de revisão; **Calculadora de conteúdo**; **Calendário editorial** (semana, mês, próximas); **FLUX Autopilot** (ciclos, alertas e renovação); adaptadores por rede (todos "não conectado", nada simulado); **Guia do FLUX** em 8 etapas e Central de ajuda.
 - Não exige IA nem Ollama. A geração de legendas pode ser feita em qualquer ferramenta externa; o XFLUX importa XLSX/CSV. Nenhuma dependência nova.
-- Publicação automática (inclusive com o computador desligado) **não existe**: exigirá backend e agendador em nuvem.
+- Publicação automática ainda **não existe**. A meta local-first é executar o agendador no dispositivo do usuário enquanto ele estiver ligado e o XFLUX estiver autorizado/em execução; publicação com o dispositivo desligado exigiria um serviço remoto opcional e não deve ser tratada como requisito padrão.
 - Funcionalidades, regras, pendências, dependências e relatório de testes: `docs/FASE4.md`.
 
 ## Fase 5 — Integrações e publicação (estrutura e publicação assistida)
