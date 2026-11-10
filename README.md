@@ -12,7 +12,7 @@ O projeto evoluiu por fases (1 a 6). A Central de integrações está implementa
 ## Tecnologias e estado da migração local
 React 18, TypeScript, Vite e CSS puro (tema escuro). O repositório inclui empacotamento desktop com Tauri 2 e WebView2 no Windows. **Atenção:** o invólucro Tauri e o instalador existem, mas a biblioteca ainda usa IndexedDB e a implementação web de acesso a pastas; a migração para persistência e acesso nativos Tauri ainda não foi concluída. O objetivo é concluir essa migração sem centralizar vídeos, legendas ou histórico.
 
-Existe também um backend Python/FastAPI + SQLite com fluxo OAuth Meta inicial e cofre criptográfico. Ele não é requisito para biblioteca, calendário ou fila locais e não deve receber a biblioteca de mídia do cliente. Sua necessidade deve ser avaliada por plataforma, apenas para os fluxos que realmente exigirem serviço técnico seguro. Publicação automática ainda não está implementada.
+Existe também um backend Python/FastAPI + SQLite com fluxo OAuth Meta inicial, sessões independentes por instalação e cofre criptográfico. O aplicativo cria sua sessão automaticamente, sem cadastro/login central ou token digitado pelo cliente. O serviço não recebe a biblioteca de mídia; guarda somente estado das conexões e tokens sociais cifrados quando a plataforma exige callback e segredo privado. Ainda precisa ser implantado em HTTPS e receber as credenciais oficiais da Meta. Publicação automática ainda não está implementada.
 
 ## Instalação no Windows
 
@@ -61,7 +61,7 @@ docs/          TESTES.md
 - Estados vazios, avisos de funcionalidade indisponível e layout responsivo (menu recolhível em telas estreitas).
 
 ## Situação real do produto
-O aplicativo já contém biblioteca, banco de legendas, associações, calculadora, calendário, Autopilot, fila e publicação assistida. O **instalador desktop para Windows já foi compilado e validado pelo GitHub Actions** (Tauri 2 + NSIS); isso confirma a geração do instalador, mas não substitui testes de uso em diferentes computadores Windows. Ainda não é um serviço de publicação automática: faltam o servidor hospedado, autenticação de usuários, cofre de tokens, armazenamento remoto de mídia, agendador/filas e integrações aprovadas pelas plataformas. Google Drive, OneDrive, login Google e relatórios reais continuam pendentes.
+O aplicativo já contém biblioteca, banco de legendas, associações, calculadora, calendário, Autopilot, fila e publicação assistida. O **instalador desktop para Windows já foi compilado e validado pelo GitHub Actions** (Tauri 2 + NSIS); isso confirma a geração do instalador, mas não substitui testes de uso em diferentes computadores Windows. Ainda não é um serviço de publicação automática: faltam a implantação do serviço seguro, credenciais/aprovações das plataformas, integrações adicionais, worker/agendador durável e publicação por API. O conteúdo permanece no armazenamento escolhido pelo cliente. Google Drive, OneDrive, login Google e relatórios reais continuam pendentes.
 
 ## Fase 2 — Biblioteca de mídias (implementada)
 - Importação de várias imagens e vídeos, miniaturas, pré-visualização, nome/formato/tamanho/data, categorias, pesquisa, filtro por tipo e categoria, exclusão com confirmação e detecção de duplicados por hash SHA-256.
