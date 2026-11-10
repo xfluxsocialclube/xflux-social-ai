@@ -5,14 +5,14 @@
 ## O que é
 O XFLUX é um robô individual de marketing e automação de postagens. Cada pessoa instala seu próprio aplicativo, conecta suas próprias redes e escolhe onde manter vídeos, imagens, planilhas de legendas e agendamentos: computador, celular, Google Drive, OneDrive ou servidor particular. O XFLUX organiza a biblioteca, prepara a fila e executa as publicações permitidas pelas APIs oficiais.
 
-**Arquitetura local-first:** os arquivos, vídeos, legendas, calendário, fila e histórico pertencem ao usuário e permanecem no armazenamento escolhido por ele. O XFLUX não é um servidor central de vídeos nem uma biblioteca compartilhada. Algumas plataformas podem exigir um pequeno serviço técnico seguro para OAuth, callbacks ou proteção de segredos; esse serviço não deve armazenar a biblioteca do usuário.
+**Arquitetura local-first obrigatória:** vídeos, legendas, calendário, fila, configurações, credenciais e histórico permanecem no dispositivo ou no armazenamento escolhido pelo próprio cliente. O aplicativo distribuído não depende de servidor central XFLUX e não envia dados do cliente para uma base de dados da empresa.
 
-O projeto evoluiu por fases (1 a 6). A Central de integrações está implementada, mas conexões reais ainda dependem dos fluxos oficiais, das credenciais/aprovações de cada plataforma e, quando tecnicamente exigido, da ativação do serviço seguro de autorização. Enquanto uma integração não estiver validada, a publicação permanece **assistida** (o XFLUX planeja; o usuário publica e confirma). Os números do painel inicial continuam sendo **dados de exemplo**, identificados como tal.
+O projeto evoluiu por fases (1 a 6). A Central de integrações informa os requisitos de cada plataforma. Os fluxos de conexão OAuth locais e as publicações por API ainda precisam ser implementados e testados individualmente. Enquanto uma integração não estiver validada, a publicação permanece **assistida** (o XFLUX planeja; o usuário publica e confirma). Os números do painel inicial continuam sendo **dados de exemplo**, identificados como tal.
 
 ## Tecnologias e estado da migração local
 React 18, TypeScript, Vite e CSS puro (tema escuro). O repositório inclui empacotamento desktop com Tauri 2 e WebView2 no Windows. **Atenção:** o invólucro Tauri e o instalador existem, mas a biblioteca ainda usa IndexedDB e a implementação web de acesso a pastas; a migração para persistência e acesso nativos Tauri ainda não foi concluída. O objetivo é concluir essa migração sem centralizar vídeos, legendas ou histórico.
 
-Existe também um backend Python/FastAPI + SQLite com fluxo OAuth Meta inicial, sessões independentes por instalação e cofre criptográfico. O aplicativo cria sua sessão automaticamente, sem cadastro/login central ou token digitado pelo cliente. O serviço não recebe a biblioteca de mídia; guarda somente estado das conexões e tokens sociais cifrados quando a plataforma exige callback e segredo privado. Ainda precisa ser implantado em HTTPS e receber as credenciais oficiais da Meta. Publicação automática ainda não está implementada.
+Há código experimental antigo de backend Python/FastAPI no repositório. Ele é legado, não faz parte do aplicativo distribuído, não deve ser implantado nem receber dados ou credenciais de clientes. O aplicativo deve funcionar sem esse backend. Publicação automática ainda não está implementada.
 
 ## Instalação no Windows
 
