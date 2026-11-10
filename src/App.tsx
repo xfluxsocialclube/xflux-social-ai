@@ -56,7 +56,7 @@ export default function App() {
       <Sidebar current={page} onNavigate={navigate} open={menuOpen} alerts={alerts} />
       {menuOpen && <div className="scrim" onClick={() => setMenuOpen(false)} />}
       <div className="main">
-        <Header titleKey={titleKey} onMenu={() => setMenuOpen(true)} />
+        <Header titleKey={titleKey} currentPage={page} onNavigate={navigate} onMenu={() => setMenuOpen(true)} />
         <main className="content">{content}</main>
       </div>
     </div>

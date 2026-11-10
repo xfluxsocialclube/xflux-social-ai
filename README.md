@@ -3,10 +3,10 @@
 > Seu conteúdo. Suas redes. Seu controle.
 
 ## O que é
-Sistema de gerenciamento e automação de conteúdo para redes sociais. O projeto evoluiu por fases (1 a 5). Nenhuma integração real com redes sociais existe ainda: a publicação é **assistida** (o XFLUX planeja; o usuário publica e confirma). Os números do painel inicial continuam sendo **dados de exemplo**, identificados como tal.
+Sistema de gerenciamento e automação de conteúdo para redes sociais. O projeto evoluiu por fases (1 a 6). A Central de integrações e o fluxo guiado estão implementados, mas conexões reais dependem da implantação do backend e das credenciais/aprovações oficiais. Sem esses serviços, a publicação permanece **assistida** (o XFLUX planeja; o usuário publica e confirma). Os números do painel inicial continuam sendo **dados de exemplo**, identificados como tal.
 
 ## Tecnologias
-React 18, TypeScript, Vite e CSS puro (tema escuro). Sem serviços pagos. Empacotamento desktop com Tauri 2; a interface usa WebView2 no Windows. Backend Python/FastAPI + SQLite permanece uma etapa futura.
+React 18, TypeScript, Vite e CSS puro (tema escuro). Sem serviços pagos ou IA obrigatória. Empacotamento desktop com Tauri 2; a interface usa WebView2 no Windows. Existe um backend Python/FastAPI + SQLite com isolamento de contas por identidade verificada, proteção de sessão em produção, fluxo OAuth Meta e cofre criptografado de tokens. Ele ainda precisa de provedor de identidade, implantação HTTPS e credenciais oficiais; publicação automática não está implementada.
 
 ## Instalação no Windows
 
@@ -83,5 +83,14 @@ O aplicativo já contém biblioteca, banco de legendas, associações, calculado
 - Funcionalidades, dependências externas, pendências e relatório de testes: `docs/FASE5.md`. Sem banco novo e sem dependências novas.
 
 
+## Fase 6 — Conexões guiadas (interface e preparação de implantação)
+
+- Navegação rápida Voltar, Início e Avançar no cabeçalho.
+- Configuração técnica escondida na área avançada; o endereço central pode ser injetado pelo mantenedor na compilação com `VITE_XFLUX_API_URL`, sem exigir que o usuário final configure servidor.
+- Ao voltar do navegador OAuth, a Central de integrações atualiza automaticamente o estado das contas.
+- Instagram/Facebook têm fluxo Meta no backend por Facebook Login; Instagram exige conta profissional vinculada a Página. TikTok e Shopee Video continuam assistidos, sem OAuth/publicação implementados.
+- A arquitetura prioriza hospedagem gratuita, mas nenhum serviço gratuito é declarado como implantado ou permanente antes da validação dos limites, persistência e disponibilidade.
+- Escopo, limitações, implantação e critérios de aceite: `docs/FASE6.md`.
+
 ## Validação contínua
-O GitHub Actions executa a instalação das dependências e a compilação de produção a cada alteração na branch principal. O artefato `dist` é guardado em cada execução bem-sucedida.
+O GitHub Actions valida o backend e compila o instalador Windows nas branches `main` e `feat/**`, além de executar em pull requests direcionados à `main`. O instalador só é disponibilizado como artefato quando a geração NSIS termina com sucesso; a publicação em Releases ocorre apenas em alterações na `main`.

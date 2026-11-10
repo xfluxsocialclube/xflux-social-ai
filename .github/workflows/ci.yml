@@ -2,7 +2,7 @@ name: XFLUX Windows installer
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feat/**']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -39,7 +39,22 @@ jobs:
         run: npm run tauri -- icon src-tauri/icons/xflux-icon.svg
 
       - name: Compilar instalador Windows
-        run: npm run tauri:build
+        shell: pwsh
+        env:
+          VITE_XFLUX_API_URL: ${{ vars.VITE_XFLUX_API_URL }}
+        run: |
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            Write-Host "Tentativa $attempt de 3 para gerar o instalador NSIS"
+            & npm run tauri:build
+            if ($LASTEXITCODE -eq 0) {
+              exit 0
+            }
+            if ($attempt -lt 3) {
+              Write-Warning "A compilação falhou. Nova tentativa em $($attempt * 15) segundos."
+              Start-Sleep -Seconds ($attempt * 15)
+            }
+          }
+          exit 1
 
       - name: Guardar instalador como artefato
         uses: actions/upload-artifact@v4

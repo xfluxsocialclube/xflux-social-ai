@@ -25,9 +25,18 @@ export function Networks() {
   const [open, setOpen] = useState<string | null>(null);
   const [oauth, setOauth] = useState<{ network: string; url: string; host: string } | null>(null);
   const [disc, setDisc] = useState<{ id: string; name: string } | null>(null);
+  const [serverOpen, setServerOpen] = useState(false);
 
   const check = useCallback(async () => { setBusy(true); try { setSnap(await refreshSnapshot()); } finally { setBusy(false); } }, []);
   useEffect(() => { if (getBackendUrl()) void check(); }, [check]);
+  // Ao voltar do navegador após consentir na rede social, atualizar as contas sem exigir novo clique.
+  useEffect(() => {
+    const refreshOnReturn = () => {
+      if (getBackendUrl()) void refreshSnapshot().then(setSnap);
+    };
+    window.addEventListener('focus', refreshOnReturn);
+    return () => window.removeEventListener('focus', refreshOnReturn);
+  }, []);
 
   const toggle = (id: string) => { const next = chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id]; setChosen(next); setPlanNetworks(next); };
   const saveServer = async () => {
@@ -38,7 +47,10 @@ export function Networks() {
   };
   const errText = (e: unknown) => t(`pub.srv.err.${e instanceof BackendError ? e.kind : 'unreachable'}` as TranslationKey);
   const connect = async (network: string, reconnectId?: string) => {
-    setErr(null); setBusy(true);
+    setErr(null);
+    // Nunca pedir endereço/chave ao usuário comum: sem backend, manter publicação assistida.
+    if (!getBackendUrl().trim()) { setErr(t('pub.cant.noServer')); return; }
+    setBusy(true);
     try { const r = await startOAuth(network, reconnectId); setOauth({ network, url: r.authorizationUrl, host: new URL(r.authorizationUrl).host }); }
     catch (e) { setErr(errText(e)); } finally { setBusy(false); }
   };
@@ -57,11 +69,16 @@ export function Networks() {
       <section className="card stack">
         <div className="row between"><h2 style={{ margin: 0 }}>{t('pub.srv.title')}</h2><span className={`pill ${srvState === 'ok' ? 'ok' : srvState === 'down' ? 'err' : 'off'}`}>{t(`pub.srv.state.${srvState}` as TranslationKey)}</span></div>
         <small className="muted">{t('pub.srv.desc')}</small>
-        <div className="form">
-          <label className="wide">{t('pub.srv.url')}<input className="search" placeholder="https://" value={url} onChange={(e) => setUrl(e.target.value)} /></label>
-          <label className="wide">{t('pub.srv.token')}<input className="search" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} /><small className="muted">{t('pub.srv.tokenHint')}</small></label>
-        </div>
-        <div className="toolbar"><button className="btn" disabled={busy} onClick={saveServer}>{t('pub.srv.save')}</button><button className="btn ghost" disabled={busy || !snap.url} onClick={check}>{t('pub.srv.test')}</button></div>
+        <button className="btn ghost" type="button" aria-expanded={serverOpen} aria-controls="xflux-server-advanced" onClick={() => setServerOpen((value) => !value)}>
+          {serverOpen ? t('pub.srv.hideAdvanced') : t('pub.srv.showAdvanced')}
+        </button>
+        {serverOpen && <div id="xflux-server-advanced" className="stack">
+          <div className="form">
+            <label className="wide">{t('pub.srv.url')}<input className="search" placeholder="https://" value={url} onChange={(e) => setUrl(e.target.value)} /></label>
+            <label className="wide">{t('pub.srv.token')}<input className="search" type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} /><small className="muted">{t('pub.srv.tokenHint')}</small></label>
+          </div>
+          <div className="toolbar"><button className="btn" disabled={busy} onClick={saveServer}>{t('pub.srv.save')}</button><button className="btn ghost" disabled={busy || !snap.url} onClick={check}>{t('pub.srv.test')}</button></div>
+        </div>}
         {snap.url && snap.reachable === true && <small className="good">{t('pub.srv.ok')} {fmt(t('pub.srv.caps'), { c: snap.health?.capabilities.join(', ') || '—' })}</small>}
         {snap.url && snap.reachable === false && <Notice tone="warn">{t(`pub.srv.err.${snap.error ?? 'unreachable'}` as TranslationKey)} {t('pub.srv.stale')}</Notice>}
         {snap.fetchedAt && <small className="muted">{fmt(t('pub.srv.checked'), { d: d(snap.fetchedAt) })}</small>}
@@ -72,8 +89,10 @@ export function Networks() {
         {ADAPTERS.map((n) => {
           const facts = getFacts(n.id); const c = connectionOf(n.id, snap); const route = planRoute(n.id, snap);
           const prov = snap.health?.providers.find((p) => p.network === n.id);
-          const canOauth = snap.reachable === true && !!prov?.oauth;
-          const why = !snap.url ? t('pub.cant.noServer') : snap.reachable !== true ? t('pub.cant.unreachable') : !prov?.oauth ? t('pub.cant.provider') : '';
+          // Snapshot antigo não pode habilitar OAuth se o endereço do servidor foi removido.
+          const hasServer = Boolean(getBackendUrl().trim()) && Boolean(snap.url);
+          const canOauth = hasServer && snap.reachable === true && !!prov?.oauth;
+          const why = !hasServer ? t('pub.cant.noServer') : snap.reachable !== true ? t('pub.cant.unreachable') : !prov?.oauth ? t('pub.cant.provider') : '';
           return (
             <div className="card net" key={n.id} style={{ alignItems: 'stretch', textAlign: 'left' }}>
               <div className="row"><div className="net-dot" style={{ background: n.color }}>{n.name[0]}</div><strong>{n.priority}. {n.name}</strong></div>
@@ -85,6 +104,7 @@ export function Networks() {
                 <small className="muted">{t(`pub.unat.${facts.unattended}` as TranslationKey)}</small>
               </div>}
               <span className="pill">{t(route.route === 'api' ? 'pub.route.api' : 'pub.route.assisted')}</span>
+              {route.blockers[0] && <small className="muted">{t('pub.route.missing')}: {t(`pub.blk.${route.blockers[0]}` as TranslationKey)}</small>}
               <div className="toolbar">
                 {c.view === 'not-connected' && <button className="btn small" disabled={!canOauth || busy} title={why} onClick={() => connect(n.id)}>{t('pub.act.connect')}</button>}
                 {(c.view === 'expired' || c.view === 'expiring' || c.view === 'revoked' || c.view === 'error') && <button className="btn small" disabled={!canOauth || busy} title={why} onClick={() => connect(n.id, c.account?.id)}>{t('pub.act.reconnect')}</button>}

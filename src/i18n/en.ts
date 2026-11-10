@@ -1,10 +1,15 @@
 import type { Dictionary } from './pt';
+import { captionsEn } from './captions';
 import { libEn } from './library';
 import { aiEn } from './ai';
 import { planEn } from './planner';
 import { pubEn } from './publishing';
 
 export const en: Dictionary = {
+  'nav.quickNavigation': 'Quick navigation',
+  'nav.previous': 'Back',
+  'nav.home': 'Home',
+  'nav.next': 'Next',
   'app.slogan': 'Your content. Your networks. Your control.',
   'nav.overview': 'Overview',
   'nav.library': 'Content library',
@@ -71,5 +76,6 @@ export const en: Dictionary = {
   ...libEn,
   ...aiEn,
   ...planEn,
+  ...captionsEn,
   ...pubEn,
 };
