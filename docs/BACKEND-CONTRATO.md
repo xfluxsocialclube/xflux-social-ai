@@ -19,10 +19,11 @@ Especificação OpenAPI: `docs/openapi-backend.yaml`. Cliente: `src/services/bac
 
 | Método e caminho | Estado real | Comportamento |
 |---|---|---|
-| `GET /v1/health` | Implementado, público | Informa somente `accounts` como capacidade disponível e todos os provedores com `oauth:false` e `publishing:false`. |
-| `GET /v1/accounts` | Implementado, protegido | Lista somente metadados cujo `owner_id` corresponde ao `sub` do JWT validado. |
-| `DELETE /v1/accounts/{id}` | Implementado, protegido | Apaga metadados somente quando o registro pertence ao usuário autenticado. Não revoga autorização na plataforma porque OAuth ainda não existe. |
-| `POST /v1/oauth/{network}/start` | Bloqueado intencionalmente | Retorna 503; não inicia nem simula autorização. |
+| `GET /v1/health` | Implementado, público | Informa capacidades conforme as variáveis de ambiente. Meta OAuth aparece disponível somente quando identidade, credenciais Meta, callback e chave Fernet estão configurados. Publicação permanece desativada. |
+| `GET /v1/accounts` | Implementado, protegido | Lista somente metadados cujo `owner_id` corresponde ao `sub` do JWT validado. Nunca devolve tokens. |
+| `DELETE /v1/accounts/{id}` | Implementado, protegido | Apaga metadados somente quando o registro pertence ao usuário autenticado. Não revoga a autorização na plataforma. |
+| `POST /v1/oauth/{network}/start` | Implementação inicial para Instagram/Facebook | Exige sessão JWT válida, configuração Meta completa e gera URL oficial com `state` aleatório de uso único. Outras redes retornam indisponibilidade. |
+| `GET /v1/oauth/meta/callback` | Implementação inicial para Instagram/Facebook | Consome `state`, troca código por token, consulta permissões e Páginas, identifica contas profissionais Instagram vinculadas e armazena tokens cifrados no banco do serviço. Requer testes reais e revisão de segurança antes de produção. |
 
 ## Endpoints planejados — não implementar no cliente como disponíveis
 
@@ -38,8 +39,8 @@ Especificação OpenAPI: `docs/openapi-backend.yaml`. Cliente: `src/services/bac
 2. Derivar o identificador do usuário exclusivamente da identidade validada no servidor; nunca aceitar user_id enviado pelo cliente como autorização. **Base implementada:** validador JWT HS256 em desenvolvimento e JWKS/RS256 em produção, com extração de `sub`; ainda falta conectar um emissor OIDC real e ciclo de vida de sessão.
 3. **Contas implementadas:** `owner_id` em contas, listagem e exclusão filtradas pelo `sub` autenticado. Aplicar a mesma regra a mídias, tokens, filas e jobs quando esses módulos forem persistidos no servidor.
 4. Conectar um provedor de identidade OIDC e usar tokens curtos/revogáveis. Não distribuir uma chave de assinatura compartilhada embutida no aplicativo desktop.
-5. Implementar OAuth state aleatório, uso único, expiração curta, vínculo à sessão e validação exata do redirect URI. Usar PKCE quando suportado pelo provedor.
-6. Criptografar tokens de rede em repouso com chave gerenciada fora do banco; nunca enviar tokens ao frontend nem registrá-los em logs.
+5. Revisar e testar o OAuth Meta já iniciado: state aleatório, uso único, expiração curta, vínculo à sessão e redirect URI exato; avaliar PKCE quando suportado.
+6. O cofre Fernet e a persistência de tokens cifrados já existem no fluxo Meta inicial; antes de produção, validar gestão da chave, rotação, backup, revogação e política de retenção. Nunca enviar tokens ao frontend nem registrá-los em logs.
 7. Implementar rate limiting, auditoria sem segredos, política de retenção, exclusão LGPD e testes de acesso cruzado entre usuários.
 8. Só anunciar conexão depois do callback validado e da consulta real à plataforma. Só anunciar publicação depois de confirmação verificável da plataforma.
 
