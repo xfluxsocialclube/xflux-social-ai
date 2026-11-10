@@ -7,6 +7,8 @@ O backend não emite tokens nem aceita um identificador de cliente no corpo.
 from __future__ import annotations
 
 import os
+import hashlib
+import time
 from functools import lru_cache
 from urllib.parse import urlsplit
 
@@ -77,6 +79,26 @@ def _decode_development_token(token: str, issuer: str, audience: str) -> dict:
         raise HTTPException(status_code=401, detail="Unauthorized") from None
 
 
+def device_session_secret() -> str:
+    """Chave privada do servidor para emitir sessões por instalação, sem login central."""
+    return os.getenv("XFLUX_DEVICE_SESSION_SECRET", "").strip()
+
+
+def issue_device_session(installation_key: str) -> str:
+    """Emite JWT curto vinculado a uma chave aleatória criada e guardada no próprio dispositivo."""
+    secret = device_session_secret()
+    issuer = os.getenv("XFLUX_JWT_ISSUER", "").strip()
+    audience = os.getenv("XFLUX_JWT_AUDIENCE", "").strip()
+    if len(secret) < 32 or not issuer or not audience:
+        raise HTTPException(status_code=503, detail="Device sessions are not configured")
+    subject = "device-" + hashlib.sha256(installation_key.encode("ascii")).hexdigest()
+    now = int(time.time())
+    return jwt.encode(
+        {"sub": subject, "iss": issuer, "aud": audience, "iat": now, "exp": now + 86400},
+        secret, algorithm="HS256",
+    )
+
+
 def authenticated_subject(authorization: str | None) -> str:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -93,7 +115,16 @@ def authenticated_subject(authorization: str | None) -> str:
     if not token:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    if os.getenv("XFLUX_ENV", "development").lower() == "production":
+    device_secret = device_session_secret()
+    if len(device_secret) >= 32:
+        try:
+            claims = jwt.decode(
+                token, device_secret, algorithms=["HS256"], issuer=issuer, audience=audience,
+                options={"require": ["exp", "iat", "iss", "aud", "sub"]},
+            )
+        except jwt.PyJWTError:
+            raise HTTPException(status_code=401, detail="Unauthorized") from None
+    elif os.getenv("XFLUX_ENV", "development").lower() == "production":
         claims = _decode_production_token(token, issuer, audience)
     else:
         claims = _decode_development_token(token, issuer, audience)
