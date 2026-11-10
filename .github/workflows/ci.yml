@@ -40,6 +40,8 @@ jobs:
 
       - name: Compilar instalador Windows
         shell: pwsh
+        env:
+          VITE_XFLUX_API_URL: ${{ vars.VITE_XFLUX_API_URL }}
         run: |
           for ($attempt = 1; $attempt -le 3; $attempt++) {
             Write-Host "Tentativa $attempt de 3 para gerar o instalador NSIS"

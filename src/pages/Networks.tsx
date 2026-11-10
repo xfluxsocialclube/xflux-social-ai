@@ -104,6 +104,7 @@ export function Networks() {
                 <small className="muted">{t(`pub.unat.${facts.unattended}` as TranslationKey)}</small>
               </div>}
               <span className="pill">{t(route.route === 'api' ? 'pub.route.api' : 'pub.route.assisted')}</span>
+              {route.blockers[0] && <small className="muted">{t('pub.route.missing')}: {t(`pub.blk.${route.blockers[0]}` as TranslationKey)}</small>}
               <div className="toolbar">
                 {c.view === 'not-connected' && <button className="btn small" disabled={!canOauth || busy} title={why} onClick={() => connect(n.id)}>{t('pub.act.connect')}</button>}
                 {(c.view === 'expired' || c.view === 'expiring' || c.view === 'revoked' || c.view === 'error') && <button className="btn small" disabled={!canOauth || busy} title={why} onClick={() => connect(n.id, c.account?.id)}>{t('pub.act.reconnect')}</button>}

@@ -1,4 +1,4 @@
-/** Textos da Fase 5 (integrações, contas, fila e publicação assistida) nos três idiomas.
+/** Textos das Fases 5 e 6 (integrações, conexões guiadas, fila e publicação assistida) nos três idiomas.
  *  Os textos pub.fact.* resumem a pesquisa oficial de 05/11/2026 (docs/INTEGRACOES-OFICIAIS.md). */
 export const pubPt = {
   'nav.publishing': 'Fila de publicações',
@@ -32,7 +32,7 @@ export const pubPt = {
   'pub.cant.noServer': 'A conexão oficial será liberada quando o servidor central do XFLUX estiver pronto. Você não precisa configurar um servidor.', 'pub.cant.unreachable': 'O servidor não está acessível agora.', 'pub.cant.provider': 'O servidor ainda não habilita a conexão desta rede.',
   'pub.checkedOn': 'Pesquisado em {d}.', 'pub.sources': 'Fontes oficiais',
   'pub.oauth.title': 'Autorizar no site oficial', 'pub.oauth.text': 'Você será levado a {host}, o site da autorização. O XFLUX não vê nem guarda a sua senha.', 'pub.oauth.open': 'Abrir site de autorização',
-  'pub.oauth.after': 'Depois de autorizar, volte aqui e clique em "Testar conexão" para atualizar.',
+  'pub.oauth.after': 'Depois de autorizar, volte aqui. O XFLUX atualizará a conexão automaticamente.',
   'pub.disc.text': 'O servidor vai revogar e apagar a autorização desta conta. As publicações planejadas continuam no calendário, mas só poderão ser feitas de forma assistida.',
   /* fila */
   'pub.q.st.queued': 'Agendadas', 'pub.q.st.due': 'No horário', 'pub.q.st.awaiting-user': 'Aguardando você', 'pub.q.st.failed': 'Com falha', 'pub.q.st.published': 'Publicadas', 'pub.q.st.blocked': 'Sem conteúdo', 'pub.q.st.cancelled': 'Canceladas',
@@ -124,7 +124,7 @@ export const pubEn: PubDict = {
   'pub.cant.noServer': 'Official connection will be enabled when the central XFLUX server is ready. You do not need to configure a server.', 'pub.cant.unreachable': 'The server is not reachable right now.', 'pub.cant.provider': 'The server does not enable connecting this network yet.',
   'pub.checkedOn': 'Researched on {d}.', 'pub.sources': 'Official sources',
   'pub.oauth.title': 'Authorize on the official site', 'pub.oauth.text': 'You will be taken to {host}, the authorization site. XFLUX never sees or stores your password.', 'pub.oauth.open': 'Open authorization site',
-  'pub.oauth.after': 'After authorizing, come back here and click "Test connection" to refresh.',
+  'pub.oauth.after': 'After authorizing, return here. XFLUX will refresh the connection automatically.',
   'pub.disc.text': 'The server will revoke and delete this account’s authorization. Planned posts stay in the calendar, but can only be posted in assisted mode.',
   'pub.q.st.queued': 'Scheduled', 'pub.q.st.due': 'Due now', 'pub.q.st.awaiting-user': 'Waiting for you', 'pub.q.st.failed': 'Failed', 'pub.q.st.published': 'Published', 'pub.q.st.blocked': 'No content', 'pub.q.st.cancelled': 'Cancelled',
   'pub.q.statNote': 'Published = confirmed by you. "Due now" = the scheduled time has passed and it has not been confirmed yet.', 'pub.q.all': 'All statuses',
@@ -209,7 +209,7 @@ export const pubEs: PubDict = {
   'pub.cant.noServer': 'La conexión oficial se habilitará cuando el servidor central de XFLUX esté listo. No necesitas configurar un servidor.', 'pub.cant.unreachable': 'El servidor no está accesible ahora.', 'pub.cant.provider': 'El servidor aún no habilita la conexión de esta red.',
   'pub.checkedOn': 'Investigado el {d}.', 'pub.sources': 'Fuentes oficiales',
   'pub.oauth.title': 'Autorizar en el sitio oficial', 'pub.oauth.text': 'Serás llevado a {host}, el sitio de la autorización. XFLUX no ve ni guarda tu contraseña.', 'pub.oauth.open': 'Abrir sitio de autorización',
-  'pub.oauth.after': 'Después de autorizar, vuelve aquí y haz clic en "Probar conexión" para actualizar.',
+  'pub.oauth.after': 'Después de autorizar, vuelve aquí. XFLUX actualizará la conexión automáticamente.',
   'pub.disc.text': 'El servidor revocará y borrará la autorización de esta cuenta. Las publicaciones planificadas siguen en el calendario, pero solo podrán hacerse de forma asistida.',
   'pub.q.st.queued': 'Programadas', 'pub.q.st.due': 'En su hora', 'pub.q.st.awaiting-user': 'Esperándote', 'pub.q.st.failed': 'Con fallo', 'pub.q.st.published': 'Publicadas', 'pub.q.st.blocked': 'Sin contenido', 'pub.q.st.cancelled': 'Canceladas',
   'pub.q.statNote': 'Publicadas = confirmadas por ti. "En su hora" = ya pasó la hora marcada y aún no fue confirmada.', 'pub.q.all': 'Todos los estados',
