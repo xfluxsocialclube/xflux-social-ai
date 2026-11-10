@@ -45,8 +45,8 @@ O projeto já tem interface React + TypeScript + Vite e um invólucro Tauri 2 pa
 - `src/services/publishing/adapters.ts` não publica: retorna indisponível ou não conectado.
 - `src/services/publishing/queue.ts` mantém fila/alertas enquanto o app está aberto; não existe worker local durável que retome agendamentos após fechar/reiniciar.
 - O estado “Publicado” depende de confirmação manual no fluxo assistido; não significa envio real automático.
-- Conexão de redes ainda não é uma experiência final simples para o cliente. A tela `src/pages/Networks.tsx` depende de URL de backend e token.
-- OAuth Meta é protótipo inicial, não pronto para produção: há dependência de JWT emitido externamente, credenciais Meta, callback HTTPS e chave Fernet. O backend não possui emissor de identidade/sessão.
+- A tela de redes agora não pede token manual: o app cria uma chave aleatória por instalação e obtém uma sessão curta automaticamente. O endereço do serviço continua sendo injetado pelo mantenedor na compilação (`VITE_XFLUX_API_URL`) ou configurado na área avançada.
+- OAuth Meta continua sendo implementação inicial, não pronta para produção: requer implantação HTTPS, credenciais Meta, callback cadastrado, segredo de sessão por instalação, chave Fernet e testes reais. O fluxo de sessão individual foi implementado no backend; não exige provedor externo de login/cadastro.
 - TikTok, Shopee Video, Pinterest e YouTube precisam de integrações próprias e validação das permissões/API. Não assumir que todas permitem publicação automática irrestrita.
 - Tauri existe, mas a migração completa da biblioteca/metadados para armazenamento nativo local ainda não foi finalizada.
 
@@ -110,3 +110,22 @@ Para tarefas Tauri, consultar os scripts existentes no `package.json` e a config
 O responsável pelo projeto é iniciante em programação e prefere instruções simples, diretas e passo a passo. Não fazer perguntas repetidas quando a decisão já estiver documentada. Explicar riscos antes de ações irreversíveis. Não confundir este projeto XFLUX com o aplicativo Android separado chamado Smart Care.
 
 **Pedido central do responsável:** continuar o projeto existente e finalizá-lo, não começar um produto novo. Priorizar funcionamento real e segurança, sem inventar conclusão de integrações.
+
+
+## 10. Atualização técnica — sessões por instalação e início da correção de conexão (10/11/2026)
+
+Foi iniciada a correção real do bloqueio de conexão na branch fix/local-first-social-connections:
+
+- backend/app/auth.py: adicionada emissão/validação de JWT curto assinado pelo segredo privado do serviço e vinculado ao hash SHA-256 da chave aleatória da instalação.
+- backend/app/main.py: adicionado POST /v1/device/session. Cada instalação gera chave local aleatória de 256 bits; o usuário não precisa criar conta XFLUX, informar JWT ou copiar tokens.
+- src/services/backend/client.ts: cria e guarda a chave local, solicita sessão automaticamente, renova a sessão quando recebe 401 e usa o JWT apenas nas chamadas protegidas.
+- src/pages/Networks.tsx: removida a caixa para digitar token manualmente. A área avançada deixa apenas a configuração do endereço de serviço, normalmente injetado pelo mantenedor no instalador.
+- backend/.env.example e backend/DEPLOY.md: documentam XFLUX_DEVICE_SESSION_SECRET, configuração Meta, TLS, persistência e rate limit.
+- backend/tests/test_api.py: adicionados testes para emissão de sessão sem login central e rejeição de chave inválida.
+- docs/BACKEND-CONTRATO.md e docs/openapi-backend.yaml: contrato atualizado para refletir o fluxo por instalação.
+
+**Importante — o que ainda impede a conexão real neste momento:** o código está preparado, mas o serviço seguro ainda precisa ser implantado em um endereço HTTPS e configurado com segredo de sessão, chave Fernet, App ID/App Secret Meta e callback registrado. Essas credenciais não existem no repositório e não podem ser inventadas ou embutidas no aplicativo. A variável de compilação VITE_XFLUX_API_URL precisa receber o endereço real do serviço para o instalador final.
+
+**Escopo de conexão atual:** Instagram/Facebook têm o fluxo OAuth inicial já escrito e agora podem usar a sessão por instalação. Ainda exigem configuração e teste com aplicativo Meta real. TikTok e Pinterest não têm OAuth implementado; YouTube precisa do fluxo OAuth instalado/PKCE; Shopee Video continua sem API oficial de publicação confirmada. Nenhuma publicação automática foi habilitada.
+
+Próximo passo obrigatório: implantar o serviço HTTPS, preencher segredos apenas no ambiente seguro do servidor, cadastrar o callback Meta, configurar VITE_XFLUX_API_URL no GitHub Actions e gerar novo instalador. Depois testar o fluxo real Facebook/Instagram antes de avançar para outras redes.
