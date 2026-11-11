@@ -24,7 +24,7 @@ export async function connectYouTube(): Promise<ConnectedAccount> {
   const { verifier, challenge } = await pkcePair();
   const state = randomString(24);
   const port = await loopbackStart();
-  const redirect = `http://127.0.0.1:${port}/callback`;
+  const redirect = `http://127.0.0.1:${port}`;
   const params = new URLSearchParams({
     client_id: app.clientId, redirect_uri: redirect, response_type: 'code', scope: YT_SCOPES.join(' '),
     code_challenge: challenge, code_challenge_method: 'S256', state, access_type: 'offline', prompt: 'consent',
