@@ -16,7 +16,6 @@ export function ConnectWizard({ name, onClose, onConnected }: {
 }) {
   const { t } = useI18n();
   const [clientId, setClientId] = useState('');
-  const [secret, setSecret] = useState('');
   const [storedId, setStoredId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -38,14 +37,14 @@ export function ConnectWizard({ name, onClose, onConnected }: {
   };
   const start = async () => {
     setErr(null);
-    const id = clientId.trim(), sec = secret.trim();
-    const reuse = storedId !== null && !sec && id === storedId;
-    if (!reuse && (!id.includes('.apps.googleusercontent.com') || !sec)) {
+    const id = clientId.trim();
+    const reuse = storedId !== null && id === storedId;
+    if (!reuse && !id.includes('.apps.googleusercontent.com')) {
       setErr(t('wz.err.fields')); return;
     }
     setBusy(true);
     try {
-      if (!reuse) await saveAppCredentials('youtube', { clientId: id, clientSecret: sec });
+      if (!reuse) await saveAppCredentials('youtube', { clientId: id });
       const acc = await connectYouTube();
       if (!alive.current) return;
       setDone(fmt(t('wz.done'), { name: acc.displayName }));
@@ -66,7 +65,6 @@ export function ConnectWizard({ name, onClose, onConnected }: {
         </ol>
         <div><button className="btn ghost small" onClick={() => void openExternal(CONSOLE_URL)}>{t('wz.openConsole')}</button></div>
         <label className="wide">{t('wz.clientId')}<input className="search" autoComplete="off" value={clientId} onChange={(e) => setClientId(e.target.value)} /></label>
-        <label className="wide">{t('wz.clientSecret')}<input className="search" type="password" autoComplete="off" value={secret} onChange={(e) => setSecret(e.target.value)} /></label>
         <small className="muted">{t('wz.vaultNote')}</small>
         {busy && <Notice>{t('wz.waiting')}</Notice>}
         {err && <Notice tone="warn">{err}</Notice>}
