@@ -14,7 +14,7 @@ export interface TokenBundle {
   expiresAt?: string;
   scopes?: string[];
 }
-export interface AppCredentials { clientId: string; clientSecret: string; }
+export interface AppCredentials { clientId: string; clientSecret?: string; }
 
 const MAX_KEY = 200;
 const MAX_VALUE = 1200;
@@ -60,13 +60,13 @@ export async function deleteTokens(network: string, accountId: string): Promise<
   await call<void>('secure_delete_credential', { account: credentialKey(network, accountId) });
 }
 export async function saveAppCredentials(network: string, c: AppCredentials): Promise<void> {
-  if (!c.clientId.trim() || !c.clientSecret.trim()) throw new VaultError('invalid', 'Credenciais vazias.');
-  await put(credentialKey(network, 'app'), { clientId: c.clientId.trim(), clientSecret: c.clientSecret.trim() });
+  if (!c.clientId.trim()) throw new VaultError('invalid', 'ID do cliente vazio.');
+  await put(credentialKey(network, 'app'), { clientId: c.clientId.trim(), ...(c.clientSecret?.trim() ? { clientSecret: c.clientSecret.trim() } : {}) });
 }
 export async function readAppCredentials(network: string): Promise<AppCredentials | null> {
   const v = (await get(credentialKey(network, 'app'))) as Partial<AppCredentials> | null;
-  if (!v || typeof v.clientId !== 'string' || typeof v.clientSecret !== 'string' || !v.clientId || !v.clientSecret) return null;
-  return { clientId: v.clientId, clientSecret: v.clientSecret };
+  if (!v || typeof v.clientId !== 'string' || !v.clientId) return null;
+  return { clientId: v.clientId, clientSecret: typeof v.clientSecret === 'string' && v.clientSecret ? v.clientSecret : undefined };
 }
 export async function deleteAppCredentials(network: string): Promise<void> {
   await call<void>('secure_delete_credential', { account: credentialKey(network, 'app') });
