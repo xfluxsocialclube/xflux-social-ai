@@ -59,6 +59,7 @@ export const es: Dictionary = {
   'mod.help': 'Guías paso a paso y respuestas a las dudas más comunes.',
   'mod.emptyTitle': 'Aún no hay nada aquí',
   'net.intro': 'Tus vídeos, textos y calendarios permanecen en la ubicación que elijas. Algunas redes requieren un servicio seguro solo para completar la autorización; no es un servidor de almacenamiento de contenido.',
+  'net.assistedIntro': 'Las conexiones directas y la publicación automática aún no están implementadas. Ninguna cuenta se marcará como conectada sin una autorización validada. Mientras tanto, XFLUX prepara el contenido para publicación asistida.',
   'net.status': 'No conectada',
   'net.connect': 'Conectar',
   'net.connectHint': 'La conexión se habilitará en una fase futura.',
