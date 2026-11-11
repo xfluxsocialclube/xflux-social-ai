@@ -58,7 +58,7 @@ export const en: Dictionary = {
   'mod.goodmorning': 'Your daily summary with FLUX: priorities, times and suggestions.',
   'mod.help': 'Step-by-step guides and answers to common questions.',
   'mod.emptyTitle': 'Nothing here yet',
-  'net.intro': 'Your videos, captions, and schedules stay in the location you choose. Some networks require a secure service only to complete authorization; this is not a content-storage server.',
+  'net.intro': 'Supported connections are made directly by the app, using the official browser and Windows secure vault. Some networks require their own setup; follow each network’s assistant.'
   'net.assistedIntro': 'Direct connections and automatic publishing are not implemented yet. No account will be marked as connected without validated authorization. Until then, XFLUX prepares content for assisted posting.',
   'net.status': 'Not connected',
   'net.connect': 'Connect',
