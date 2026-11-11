@@ -103,9 +103,9 @@ export const pubPt = {
   'pub.fact.youtube.4': 'Sem informar a privacidade, o padrão é público. A página oficial atual diz que vídeos de projetos não verificados não ficam restritos ao modo privado; versões antigas e guias de terceiros dizem o contrário. Confirme antes de lançar.',
   'pub.fact.youtube.5': 'Valem os Termos de Serviço e as Políticas para Desenvolvedores da API do YouTube; pode haver auditoria de conformidade para ampliar cota.',
   /* ajuda */
-  'help.q8': 'Por que minhas redes aparecem como "Não conectada"?', 'help.a8': 'Porque algumas redes exigem um serviço técnico seguro para concluir o OAuth. Esse serviço não guarda seus vídeos nem suas legendas. Até a integração oficial estar configurada e validada, a publicação permanece assistida.',
+  'help.q8': 'Por que minhas redes aparecem como "Não conectada"?', 'help.a8': 'Cada rede exige autorização oficial. O login do YouTube está sendo integrado diretamente ao aplicativo; as demais redes ainda não estão habilitadas. O XFLUX não finge conexões.',
   'help.q9': 'Como funciona a publicação assistida?', 'help.a9': 'Na Fila de publicações, abra o item, copie os dados, publique na própria rede e clique em "Marcar como publicada". Se algo der errado, use "Não consegui publicar" para registrar o motivo.',
-  'help.q10': 'O que significam os estados de uma conta?', 'help.a10': 'Conectada: autorização válida. Perto de expirar: reconecte antes do prazo. Expirada ou revogada: é preciso reconectar. Com erro: veja o último erro informado. Não conectada: nenhum servidor confirmou essa conta.',
+  'help.q10': 'O que significam os estados de uma conta?', 'help.a10': 'Conectada: autorização local validada na plataforma. Perto de expirar: reconecte antes do prazo. Expirada ou revogada: é preciso reconectar. Com erro: veja o último erro informado. Não conectada: não há autorização validada neste computador.',
 } as const;
 export type PubKey = keyof typeof pubPt;
 
@@ -209,7 +209,7 @@ export const pubEn: PubDict = {
   'pub.fact.youtube.5': 'The YouTube API Terms of Service and Developer Policies apply; a compliance audit may be needed to raise quota.',
   'help.q8': 'Why do my networks show as "Not connected"?', 'help.a8': 'Each network requires official authorization. YouTube login is being integrated into the app; the other networks are not enabled yet. XFLUX never fakes connections.',
   'help.q9': 'How does assisted posting work?', 'help.a9': 'In the Publishing queue, open the item, copy the data, post on the network itself and click "Mark as published". If something goes wrong, use "I could not post" to record the reason.',
-  'help.q10': 'What do the account states mean?', 'help.a10': 'Connected: valid authorization. About to expire: reconnect before the deadline. Expired or revoked: you must reconnect. Has an error: see the last reported error. Not connected: no server has confirmed this account.',
+  'help.q10': 'What do the account states mean?', 'help.a10': 'Connected: authorization validated with the platform and stored locally. About to expire: reconnect before the deadline. Expired or revoked: reconnect. Error: check the last reported issue. Not connected: no authorization has been validated on this computer.',
 };
 export const pubEs: PubDict = {
   'nav.publishing': 'Cola de publicaciones',
@@ -310,5 +310,5 @@ export const pubEs: PubDict = {
   'pub.fact.youtube.5': 'Se aplican los Términos de Servicio y las Políticas para Desarrolladores de la API de YouTube; puede haber auditoría de cumplimiento para ampliar la cuota.',
   'help.q8': '¿Por qué mis redes aparecen como "No conectada"?', 'help.a8': 'Cada red requiere autorización oficial. El inicio de sesión de YouTube se está integrando en la aplicación; las demás redes aún no están habilitadas. XFLUX no finge conexiones.',
   'help.q9': '¿Cómo funciona la publicación asistida?', 'help.a9': 'En la Cola de publicaciones, abre el elemento, copia los datos, publica en la propia red y haz clic en "Marcar como publicada". Si algo sale mal, usa "No pude publicar" para registrar el motivo.',
-  'help.q10': '¿Qué significan los estados de una cuenta?', 'help.a10': 'Conectada: autorización válida. A punto de vencer: reconecta antes del plazo. Vencida o revocada: hay que reconectar. Con error: mira el último error informado. No conectada: ningún servidor confirmó esa cuenta.',
+  'help.q10': '¿Qué significan los estados de una cuenta?', 'help.a10': 'Conectada: autorización validada con la plataforma y guardada localmente. A punto de vencer: reconecta antes del plazo. Vencida o revocada: reconecta. Con error: revisa el último error. No conectada: no hay autorización validada en este ordenador.',
 };
