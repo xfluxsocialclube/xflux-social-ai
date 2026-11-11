@@ -6,6 +6,8 @@ use serde_json::Value;
 use std::{fs, path::PathBuf};
 use tauri::{AppHandle, Manager};
 
+mod oauth;
+
 const KEYRING_SERVICE: &str = "com.xflux.socialai";
 const STORES: &[&str] = &["media", "categories", "history", "usage", "conversations", "captions", "pairings", "plans", "posts"];
 
@@ -166,10 +168,14 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_persisted_scope::init())
+        .plugin(tauri_plugin_opener::init())
+        .manage(oauth::OauthState::default())
         .invoke_handler(tauri::generate_handler![
             local_db_init, local_db_import_legacy, local_db_get_all, local_db_put,
             local_db_put_many, local_db_delete, local_db_delete_many, local_kv_set, local_kv_get,
-            secure_store_credential, secure_read_credential, secure_delete_credential
+            secure_store_credential, secure_read_credential, secure_delete_credential,
+            oauth::oauth_loopback_start, oauth::oauth_loopback_wait,
+            oauth::oauth_open_browser, oauth::oauth_http_request
         ])
         .run(tauri::generate_context!())
         .expect("erro ao iniciar o XFLUX Social AI");
