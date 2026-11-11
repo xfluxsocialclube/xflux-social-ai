@@ -59,7 +59,7 @@ export const en: Dictionary = {
   'mod.help': 'Step-by-step guides and answers to common questions.',
   'mod.emptyTitle': 'Nothing here yet',
   'net.intro': 'Supported connections are made directly by the app, using the official browser and Windows secure vault. Some networks require their own setup; follow each network’s assistant.'
-  'net.assistedIntro': 'Direct connections and automatic publishing are not implemented yet. No account will be marked as connected without validated authorization. Until then, XFLUX prepares content for assisted posting.',
+  'net.assistedIntro': 'The YouTube connection flow has been added and is awaiting Windows validation. The other networks are not enabled yet. Automatic publishing has not been implemented.',
   'net.status': 'Not connected',
   'net.connect': 'Connect',
   'net.connectHint': 'Connection will be released in a future phase.',
