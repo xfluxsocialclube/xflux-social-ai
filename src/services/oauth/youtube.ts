@@ -56,7 +56,7 @@ export async function connectYouTube(): Promise<ConnectedAccount> {
   const now = new Date().toISOString();
   const account: ConnectedAccount = {
     id: channelId, network: 'youtube', displayName, state: 'connected',
-    scopes: granted, connectedAt: now, expiresAt: null, lastCheckedAt: now,
+    scopes: granted, connectedAt: now, expiresAt, lastCheckedAt: now,
   };
   saveLocalAccount(account);
   return account;
