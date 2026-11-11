@@ -58,7 +58,7 @@ export const es: Dictionary = {
   'mod.goodmorning': 'Tu resumen diario con FLUX: prioridades, horarios y sugerencias.',
   'mod.help': 'Guías paso a paso y respuestas a las dudas más comunes.',
   'mod.emptyTitle': 'Aún no hay nada aquí',
-  'net.intro': 'Tus vídeos, textos y calendarios permanecen en la ubicación que elijas. Algunas redes requieren un servicio seguro solo para completar la autorización; no es un servidor de almacenamiento de contenido.',
+  'net.intro': 'Las conexiones compatibles se realizan directamente desde la aplicación, usando el navegador oficial y el almacén seguro de Windows. Algunas redes requieren su propia configuración; sigue el asistente de cada red.'
   'net.assistedIntro': 'Las conexiones directas y la publicación automática aún no están implementadas. Ninguna cuenta se marcará como conectada sin una autorización validada. Mientras tanto, XFLUX prepara el contenido para publicación asistida.',
   'net.status': 'No conectada',
   'net.connect': 'Conectar',
