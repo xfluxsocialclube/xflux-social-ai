@@ -36,7 +36,7 @@ export async function connectYouTube(): Promise<ConnectedAccount> {
   if (cb.error) throw new OAuthError(cb.error === 'access_denied' ? 'denied' : 'generic');
   if (!cb.code || cb.state !== state) throw new OAuthError('state');
   const tok = await http('POST', TOKEN, { form: {
-    client_id: app.clientId, client_secret: app.clientSecret, code: cb.code, code_verifier: verifier,
+    client_id: app.clientId, ...(app.clientSecret ? { client_secret: app.clientSecret } : {}), code: cb.code, code_verifier: verifier,
     grant_type: 'authorization_code', redirect_uri: redirect,
   } });
   const tb = obj(tok.body);
@@ -72,7 +72,7 @@ export async function getYouTubeAccessToken(accountId: string): Promise<string> 
     throw new OAuthError('denied');
   }
   const r = await http('POST', TOKEN, { form: {
-    client_id: app.clientId, client_secret: app.clientSecret, refresh_token: t.refreshToken, grant_type: 'refresh_token',
+    client_id: app.clientId, ...(app.clientSecret ? { client_secret: app.clientSecret } : {}), refresh_token: t.refreshToken, grant_type: 'refresh_token',
   } });
   const b = obj(r.body);
   if (r.status !== 200 || !str(b.access_token)) {
