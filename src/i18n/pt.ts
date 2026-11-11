@@ -57,7 +57,7 @@ export const pt = {
   'mod.goodmorning': 'Seu resumo diário com o FLUX: prioridades, horários e sugestões.',
   'mod.help': 'Guias passo a passo e respostas para as dúvidas mais comuns.',
   'mod.emptyTitle': 'Nada por aqui ainda',
-  'net.intro': 'Seus vídeos, legendas e agendamentos ficam no local escolhido por você. Algumas redes exigem um serviço seguro apenas para concluir a autorização; isso não é um servidor de armazenamento de conteúdo.',
+  'net.intro': 'As conexões compatíveis são feitas diretamente pelo aplicativo, usando o navegador oficial e o cofre seguro do Windows. Algumas redes exigem configurações próprias; veja o assistente de cada rede.'
   'net.assistedIntro': 'As conexões diretas e a publicação automática ainda não foram implementadas. Nenhuma conta será marcada como conectada sem autorização validada. Enquanto isso, o XFLUX prepara o conteúdo para publicação assistida.',
   'net.status': 'Não conectada',
   'net.connect': 'Conectar',
