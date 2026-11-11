@@ -78,7 +78,7 @@ fn handle_connection(stream: &mut TcpStream) -> Option<CallbackResult> {
     let target = parts.next()?;
     if method != "GET" { respond(stream, 405, "Método não permitido."); return None; }
     let parsed = url::Url::parse(&format!("http://127.0.0.1{target}")).ok()?;
-    if parsed.path() != "/callback" { respond(stream, 404, "Não encontrado."); return None; }
+    if parsed.path() != "/" { respond(stream, 404, "Não encontrado."); return None; }
     let mut r = CallbackResult { code: None, state: None, error: None };
     for (k, v) in parsed.query_pairs() {
         match k.as_ref() {
