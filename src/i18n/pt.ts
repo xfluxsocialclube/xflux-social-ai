@@ -58,6 +58,7 @@ export const pt = {
   'mod.help': 'Guias passo a passo e respostas para as dúvidas mais comuns.',
   'mod.emptyTitle': 'Nada por aqui ainda',
   'net.intro': 'Seus vídeos, legendas e agendamentos ficam no local escolhido por você. Algumas redes exigem um serviço seguro apenas para concluir a autorização; isso não é um servidor de armazenamento de conteúdo.',
+  'net.assistedIntro': 'As conexões diretas e a publicação automática ainda não foram implementadas. Nenhuma conta será marcada como conectada sem autorização validada. Enquanto isso, o XFLUX prepara o conteúdo para publicação assistida.',
   'net.status': 'Não conectada',
   'net.connect': 'Conectar',
   'net.connectHint': 'A conexão será liberada em uma fase futura.',
