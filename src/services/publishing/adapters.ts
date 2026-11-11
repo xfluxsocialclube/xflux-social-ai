@@ -1,10 +1,11 @@
 /**
- * Adaptadores de publicação, um por rede.
- * O estado de conexão é local ao dispositivo. Nenhum adaptador consulta um servidor XFLUX.
- * Até existir OAuth local e envio oficial implementados e testados, nada é simulado.
+ * Adaptadores de publicação, um por rede, independentes entre si.
+ * Nenhum adaptador simula sucesso: a publicação permanece assistida até existir
+ * OAuth local, regra oficial compatível e envio por API implementado e testado.
  */
 import { NETWORKS } from '../networks';
 import type { TranslationKey } from '../../i18n/pt';
+import { connectionOf } from '../accounts/local';
 import { getFacts } from './catalog';
 import type { ConnectionView } from './types';
 
@@ -15,20 +16,22 @@ export interface PublishRequest { network: string; mediaPath: string | null; tex
 export interface PublishAdapter {
   id: string; name: string; color: string; priority: number;
   stage: IntegrationStage; stageKey: TranslationKey;
-  /** Até o fluxo OAuth local da rede ser implementado, a conta não é considerada conectada. */
   connection(): ConnectionView;
   publish(req: PublishRequest): Promise<PublishResult>;
 }
 const make = (id: string): PublishAdapter => {
-  const n = NETWORKS.find((x) => x.id === id)!; const facts = getFacts(id);
+  const network = NETWORKS.find((item) => item.id === id)!;
+  const facts = getFacts(id);
   const assistedOnly = facts?.directPublish === 'not-confirmed';
   return {
-    id, name: n.name, color: n.color, priority: NETWORKS.indexOf(n) + 1,
+    id, name: network.name, color: network.color, priority: NETWORKS.indexOf(network) + 1,
     stage: assistedOnly ? 'assisted-only' : 'official-api-to-validate',
     stageKey: assistedOnly ? 'net.stage.assisted' : 'net.stage.validate',
-    connection: () => 'not-connected',
-    publish: async () => (assistedOnly ? { ok: false, reason: 'not-available' } : { ok: false, reason: 'not-connected' }),
+    connection: () => connectionOf(id).view,
+    publish: async () => (assistedOnly
+      ? { ok: false, reason: 'not-available' }
+      : { ok: false, reason: 'not-connected' }),
   };
 };
-export const ADAPTERS: PublishAdapter[] = NETWORKS.map((n) => make(n.id));
-export const getAdapter = (id: string) => ADAPTERS.find((a) => a.id === id);
+export const ADAPTERS: PublishAdapter[] = NETWORKS.map((network) => make(network.id));
+export const getAdapter = (id: string) => ADAPTERS.find((adapter) => adapter.id === id);
