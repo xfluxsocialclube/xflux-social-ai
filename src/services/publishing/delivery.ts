@@ -9,18 +9,25 @@ import type { MediaItem } from '../library/types';
 import type { PlannedPost } from '../planner/types';
 import { getFacts } from './catalog';
 import type { Blocker } from './types';
+import { connectionOf, isLoginImplemented } from '../accounts/local';
 
 /** Nenhuma rede possui envio automático concluído e validado nesta versão. */
 export const API_PUBLISH_IMPLEMENTED = false;
 
 export interface RouteInfo { route: 'assisted' | 'api'; blockers: Blocker[]; }
 export function planRoute(network: string, now = new Date()): RouteInfo {
-  const facts = getFacts(network); const b: Blocker[] = [];
-  if (!facts || facts.directPublish === 'not-confirmed') b.push('not-officially-available');
-  if (facts?.unattended === 'restricted-by-policy') b.push('policy-requires-user');
-  if (facts?.directPublish === 'official-restricted') b.push('official-review-pending');
-  if (!API_PUBLISH_IMPLEMENTED) b.push('api-submit-not-implemented');
-  return { route: b.length === 0 ? 'api' : 'assisted', blockers: b };
+  const facts = getFacts(network); const blockers: Blocker[] = [];
+  if (!facts || facts.directPublish === 'not-confirmed') blockers.push('not-officially-available');
+  if (!isLoginImplemented(network)) blockers.push('provider-not-enabled');
+  const connection = connectionOf(network, now);
+  if (connection.view === 'not-connected') blockers.push('no-account');
+  else if (connection.view === 'expired') blockers.push('token-expired');
+  else if (connection.view === 'revoked') blockers.push('token-revoked');
+  else if (connection.view === 'error') blockers.push('account-error');
+  if (facts?.unattended === 'restricted-by-policy') blockers.push('policy-requires-user');
+  if (facts?.directPublish === 'official-restricted') blockers.push('official-review-pending');
+  if (!API_PUBLISH_IMPLEMENTED) blockers.push('api-submit-not-implemented');
+  return { route: blockers.length === 0 ? 'api' : 'assisted', blockers };
 }
 
 export type FieldKey = 'caption' | 'title' | 'description' | 'tags' | 'board' | 'privacy';
