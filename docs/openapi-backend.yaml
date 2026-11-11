@@ -3,11 +3,191 @@ info:
   title: XFLUX Backend (contrato implementado v1)
   version: "1"
   description: >
-    Estado real do protótipo. Endpoints protegidos validam JWT HS256 e isolam metadados de contas pelo subject verificado. Ainda não há emissor OIDC/login conectado. OAuth e publicação estão desativados.
+    Estado real do protótipo. Endpoints protegidos validam JWT e isolam contas pelo subject verificado. O fluxo OAuth inicial da Meta (Facebook/Instagram) está implementado, mas depende de emissor JWT, credenciais Meta, callback HTTPS e chave Fernet configurados. Publicação ainda está desativada.
 servers:
   - url: https://api.example.invalid
 security: []
 paths:
+  /v1/device/session:
+    post:
+      summary: Cria uma sessão curta vinculada a uma instalação individual do XFLUX
+      description: Recebe uma chave aleatória criada localmente. Não exige login central nem recebe arquivos de mídia.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [installationKey]
+              properties:
+                installationKey:
+                  type: string
+                  pattern: '^[0-9a-fA-F]{64}  /v1/health:
+    get:
+      operationId: health
+      summary: Capacidades realmente disponíveis
+      responses:
+        "200":
+          description: Estado do backend; OAuth e publicação permanecem desativados.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /v1/accounts:
+    get:
+      operationId: listAccounts
+      summary: Lista metadados pertencentes ao usuário autenticado
+      security:
+        - sessionBearer: []
+      responses:
+        "200":
+          description: Metadados das contas pertencentes ao subject autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Accounts"
+        "401":
+          description: Sessão ausente ou incorreta
+        "503":
+          description: Configuração JWT ou de produção ausente/insegura
+  /v1/accounts/{account_id}:
+    delete:
+      operationId: deleteAccountMetadata
+      summary: Apaga metadados locais; não revoga na plataforma
+      security:
+        - sessionBearer: []
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Metadados locais apagados
+        "401":
+          description: Sessão ausente ou incorreta
+        "503":
+          description: Configuração segura indisponível
+  /v1/oauth/{network}/start:
+    post:
+      operationId: startOAuth
+      summary: Bloqueado até implementação OAuth real
+      security:
+        - sessionBearer: []
+      parameters:
+        - name: network
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [instagram, facebook, tiktok, shopee, pinterest, youtube]
+      responses:
+        "200":
+          description: URL oficial de autorização Meta e validade do state.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authorizationUrl, expiresInSeconds]
+                properties:
+                  authorizationUrl:
+                    type: string
+                    format: uri
+                  expiresInSeconds:
+                    type: integer
+        "503":
+          description: Sessão, credenciais Meta ou configuração OAuth ausentes; rede não suportada
+        "401":
+          description: Sessão ausente ou incorreta
+        "404":
+          description: Rede desconhecida
+components:
+  securitySchemes:
+    sessionBearer:
+      type: http
+      scheme: bearer
+      description: JWT assinado HS256 pelo emissor configurado; deve conter iss, aud, sub, iat e exp válidos. Não é token de rede social.
+  schemas:
+    Health:
+      type: object
+      required: [service, apiVersion, capabilities, providers]
+      properties:
+        service:
+          type: string
+          enum: [xflux-backend]
+        apiVersion:
+          type: string
+          enum: ["1"]
+        capabilities:
+          type: array
+          items:
+            type: string
+            enum: [accounts, oauth]
+        providers:
+          type: array
+          items:
+            type: object
+            required: [network, oauth, publishing]
+            properties:
+              network:
+                type: string
+              oauth:
+                type: boolean
+                enum: [false, true]
+              publishing:
+                type: boolean
+                enum: [false]
+    Account:
+      type: object
+      required: [id, network, displayName, state, scopes, connectedAt, lastCheckedAt]
+      properties:
+        id:
+          type: string
+        network:
+          type: string
+        displayName:
+          type: string
+        state:
+          type: string
+          enum: [connected, expired, revoked, error]
+        scopes:
+          type: array
+          items:
+            type: string
+        connectedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastCheckedAt:
+          type: string
+          format: date-time
+        lastError:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    Accounts:
+      type: object
+      required: [accounts]
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Account"
+
+      responses:
+        '200':
+          description: Sessão curta emitida pelo servidor
+        '400':
+          description: Chave de instalação inválida
+        '503':
+          description: Serviço de sessão não configurado
   /v1/health:
     get:
       operationId: health
@@ -69,8 +249,21 @@ paths:
             type: string
             enum: [instagram, facebook, tiktok, shopee, pinterest, youtube]
       responses:
+        "200":
+          description: URL oficial de autorização Meta e validade do state.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authorizationUrl, expiresInSeconds]
+                properties:
+                  authorizationUrl:
+                    type: string
+                    format: uri
+                  expiresInSeconds:
+                    type: integer
         "503":
-          description: OAuth ainda não configurado; nenhuma autorização foi iniciada
+          description: Sessão, credenciais Meta ou configuração OAuth ausentes; rede não suportada
         "401":
           description: Sessão ausente ou incorreta
         "404":
@@ -96,7 +289,7 @@ components:
           type: array
           items:
             type: string
-            enum: [accounts]
+            enum: [accounts, oauth]
         providers:
           type: array
           items:
@@ -107,7 +300,7 @@ components:
                 type: string
               oauth:
                 type: boolean
-                enum: [false]
+                enum: [false, true]
               publishing:
                 type: boolean
                 enum: [false]

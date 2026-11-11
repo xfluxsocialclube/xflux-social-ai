@@ -57,7 +57,7 @@ export const pt = {
   'mod.goodmorning': 'Seu resumo diário com o FLUX: prioridades, horários e sugestões.',
   'mod.help': 'Guias passo a passo e respostas para as dúvidas mais comuns.',
   'mod.emptyTitle': 'Nada por aqui ainda',
-  'net.intro': 'Nenhuma rede aparece como conectada sem que um servidor do XFLUX confirme a autorização. Sem servidor, a publicação é assistida.',
+  'net.intro': 'Seus vídeos, legendas e agendamentos ficam no local escolhido por você. Algumas redes exigem um serviço seguro apenas para concluir a autorização; isso não é um servidor de armazenamento de conteúdo.',
   'net.status': 'Não conectada',
   'net.connect': 'Conectar',
   'net.connectHint': 'A conexão será liberada em uma fase futura.',

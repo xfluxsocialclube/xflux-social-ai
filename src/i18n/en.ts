@@ -58,7 +58,7 @@ export const en: Dictionary = {
   'mod.goodmorning': 'Your daily summary with FLUX: priorities, times and suggestions.',
   'mod.help': 'Step-by-step guides and answers to common questions.',
   'mod.emptyTitle': 'Nothing here yet',
-  'net.intro': 'No network shows as connected unless an XFLUX server confirms the authorization. Without a server, posting is assisted.',
+  'net.intro': 'Your videos, captions, and schedules stay in the location you choose. Some networks require a secure service only to complete authorization; this is not a content-storage server.',
   'net.status': 'Not connected',
   'net.connect': 'Connect',
   'net.connectHint': 'Connection will be released in a future phase.',

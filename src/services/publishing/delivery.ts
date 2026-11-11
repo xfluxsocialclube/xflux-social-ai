@@ -1,31 +1,22 @@
 /**
- * Decide COMO uma publicação pode acontecer. Hoje a rota é sempre "assistida": o aplicativo ainda não envia nada às redes.
- * A lista de "bloqueios" mostra ao usuário, de forma honesta, o que falta para existir publicação automática.
+ * Decide COMO uma publicação pode acontecer.
+ * A operação é local-first: nenhuma rota depende de backend central.
+ * Até existir envio oficial implementado e testado, a rota permanece assistida.
  */
 import { composeCaption } from '../captions/store';
 import type { Caption } from '../captions/types';
 import type { MediaItem } from '../library/types';
-import { connectionOf, type BackendSnapshot } from '../backend/accounts';
 import type { PlannedPost } from '../planner/types';
 import { getFacts } from './catalog';
 import type { Blocker } from './types';
 
-/** Enquanto o envio por API não estiver implementado e testado com credenciais reais, nenhuma publicação é automática. */
+/** Nenhuma rede possui envio automático concluído e validado nesta versão. */
 export const API_PUBLISH_IMPLEMENTED = false;
 
 export interface RouteInfo { route: 'assisted' | 'api'; blockers: Blocker[]; }
-export function planRoute(network: string, snap: BackendSnapshot, now = new Date()): RouteInfo {
+export function planRoute(network: string, now = new Date()): RouteInfo {
   const facts = getFacts(network); const b: Blocker[] = [];
   if (!facts || facts.directPublish === 'not-confirmed') b.push('not-officially-available');
-  if (!snap.url) b.push('no-backend');
-  else if (snap.reachable !== true) b.push('backend-unreachable');
-  else {
-    const prov = snap.health?.providers.find((p) => p.network === network);
-    if (!prov || !prov.publishing) b.push('provider-not-enabled');
-    const c = connectionOf(network, snap, now);
-    if (c.view === 'not-connected') b.push('no-account'); else if (c.view === 'expired') b.push('token-expired'); else if (c.view === 'revoked') b.push('token-revoked'); else if (c.view === 'error') b.push('account-error');
-    if (!snap.health?.capabilities.includes('publishing')) b.push('backend-no-publishing');
-  }
   if (facts?.unattended === 'restricted-by-policy') b.push('policy-requires-user');
   if (facts?.directPublish === 'official-restricted') b.push('official-review-pending');
   if (!API_PUBLISH_IMPLEMENTED) b.push('api-submit-not-implemented');
@@ -40,7 +31,7 @@ export interface PublishPackage {
 }
 const firstLine = (t: string) => t.split(/\r?\n/)[0].trim();
 
-/** Monta os campos que cada rede pede, só com dados do próprio usuário. Escolhas que são dele (quadro, privacidade) ficam em branco. */
+/** Monta os campos que cada rede pede, só com dados do próprio usuário. */
 export function buildPackage(post: PlannedPost, caption: Caption | undefined, media: MediaItem | undefined): PublishPackage {
   const text = caption ? composeCaption(caption) : '';
   const title = caption ? (caption.product || firstLine(caption.text)) : '';

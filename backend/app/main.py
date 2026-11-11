@@ -15,7 +15,7 @@ from urllib.request import Request, urlopen
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.auth import authenticated_subject
+from app.auth import authenticated_subject, device_session_secret, issue_device_session
 from app.oauth_state import (
     consume_oauth_state_for_callback,
     ensure_oauth_state_table,
@@ -113,13 +113,29 @@ def _meta_json(url: str, *, form: dict[str, str] | None = None) -> dict[str, Any
     return payload
 
 
+@app.post("/v1/device/session")
+def create_device_session(payload: dict[str, Any]) -> dict[str, Any]:
+    """Troca uma chave aleatória local por uma sessão curta; nenhum login central é solicitado."""
+    installation_key = payload.get("installationKey")
+    if not isinstance(installation_key, str) or len(installation_key) != 64:
+        raise HTTPException(status_code=400, detail="Invalid installation key")
+    try:
+        int(installation_key, 16)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid installation key") from None
+    if ENVIRONMENT == "production" and not production_origins_are_safe():
+        raise HTTPException(status_code=503, detail="Secure production origin configuration is required")
+    return {"accessToken": issue_device_session(installation_key), "expiresInSeconds": 86400}
+
+
 @app.get("/v1/health")
 def health() -> dict[str, Any]:
-    identity_ready = bool(os.getenv("XFLUX_JWT_ISSUER", "").strip() and os.getenv("XFLUX_JWT_AUDIENCE", "").strip())
-    if ENVIRONMENT == "production":
-        identity_ready = identity_ready and urlsplit(os.getenv("XFLUX_JWKS_URL", "").strip()).scheme == "https"
-    else:
-        identity_ready = identity_ready and len(os.getenv("XFLUX_JWT_SECRET", "")) >= 32
+    # A identidade é criada por instalação; não exige cadastro/login de uma plataforma central.
+    identity_ready = bool(
+        len(device_session_secret()) >= 32
+        and os.getenv("XFLUX_JWT_ISSUER", "").strip()
+        and os.getenv("XFLUX_JWT_AUDIENCE", "").strip()
+    )
     meta_ready = identity_ready and all(os.getenv(key, "").strip() for key in ("META_APP_ID", "META_APP_SECRET", "META_OAUTH_REDIRECT_URI", "XFLUX_TOKEN_ENCRYPTION_KEY"))
     return {
         "service": "xflux-backend", "apiVersion": "1",

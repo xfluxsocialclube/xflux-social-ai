@@ -1,29 +1,29 @@
-# Estado atual do backend (atualizado em 08/11/2026)
+# Estado atual do backend (atualizado em 10/11/2026)
 
-> Esta seção prevalece sobre descrições históricas mais abaixo, que podem mencionar etapas anteriores.
+O backend contém um fluxo inicial de OAuth da Meta (Facebook/Instagram) e agora suporta **sessões independentes por instalação do XFLUX**, sem exigir cadastro/login em um provedor central. O aplicativo cria uma chave aleatória local e recebe uma sessão curta assinada pelo servidor. Cada instalação tem seu próprio identificador e suas próprias contas conectadas.
 
-O backend **já contém uma implementação inicial de OAuth da Meta (Facebook/Instagram)**: início de autorização, estado de uso único vinculado à sessão, callback, troca/validação de tokens, consulta de Páginas/contas Instagram e armazenamento de token criptografado. O recurso só é habilitado quando a configuração necessária está presente. Isso ainda não equivale a publicação automática pronta para produção.
+O serviço seguro é necessário somente para concluir OAuth que depende de segredo privado e callback HTTPS. Ele não armazena vídeos, legendas, planilhas ou calendário do cliente. Tokens de redes sociais são armazenados criptografados no banco do serviço e nunca retornam ao frontend.
 
-Também existem autenticação JWT (HS256 apenas em desenvolvimento; RS256/JWKS HTTPS em produção), isolamento de contas por proprietário, cofre Fernet e endpoints de consulta/desconexão.
+**Ainda dependem de configuração externa:** hospedagem HTTPS, segredo de sessão, chave Fernet, credenciais e aprovação do aplicativo Meta, URL de callback e configuração de produção. Sem esses dados, o botão de conexão permanece corretamente bloqueado. Não existem credenciais reais no repositório.
 
-**Ainda não estão concluídos:** interface de cadastro/login e emissão/renovação de sessão; hospedagem e provedor de identidade reais; testes OAuth com aplicativo Meta aprovado; publicação pela API; upload remoto, fila durável e agendador; integrações reais de TikTok, Pinterest, YouTube Shorts e Shopee Video.
+**Ainda não estão concluídos:** publicação por API, upload remoto de mídia, fila durável, agendador, integrações OAuth reais de TikTok/Pinterest/YouTube e publicação oficial da Shopee Video. Conectar uma conta não significa que a publicação automática esteja pronta.
 
-A dependência `cryptography` agora está declarada em `requirements.txt`, pois o backend importa o cofre Fernet durante a inicialização.
+A variável XFLUX_DEVICE_SESSION_SECRET (mínimo 32 caracteres) permite emitir sessões curtas por instalação. Configure-a somente no servidor. XFLUX_JWT_ISSUER e XFLUX_JWT_AUDIENCE identificam o emissor e o público. O endpoint POST /v1/device/session recebe somente uma chave aleatória de instalação; aplique rate limit no proxy HTTPS.
 
-Para preparar uma implantação containerizada, consulte [DEPLOY.md](DEPLOY.md). Os arquivos Docker não provisionam credenciais, domínio, identidade ou aprovação de plataformas.
-
----
 
 # Servidor XFLUX — base inicial
 
 Esta pasta contém o primeiro serviço executável do backend. Ele ainda **não conecta redes nem publica conteúdo**.
 
-## O que já funciona
+## O que já está implementado no código
 
-- GET /v1/health: informa que somente a consulta de contas está disponível; OAuth e publicação aparecem desativados para as seis redes.
+- GET /v1/health: informa as capacidades conforme a configuração; Meta OAuth só aparece habilitado quando identidade, credenciais, callback e chave de criptografia estão presentes.
 - GET /v1/accounts: exige JWT assinado e validado pelo servidor; retorna somente metadados pertencentes ao usuário autenticado.
 - DELETE /v1/accounts/{id}: só remove metadados pertencentes ao usuário autenticado.
-- SQLite local para metadados, CORS configurável e testes automatizados.
+- POST /v1/oauth/{network}/start: inicia o fluxo oficial Meta para Facebook/Instagram quando configurado e autenticado; outras redes permanecem indisponíveis.
+- GET /v1/oauth/meta/callback: troca o código, valida permissões e páginas e persiste tokens cifrados; ainda requer validação ponta a ponta com credenciais reais.
+- SQLite para metadados/contas e tokens cifrados, CORS configurável e testes automatizados.
+- **Publicação por API, upload de mídia e agendador ainda não estão implementados.**
 
 ## Executar em desenvolvimento
 
@@ -43,7 +43,7 @@ A API fica em http://127.0.0.1:8000 e a documentação interativa em /docs.
 
 O backend valida JWT com emissor, público, expiração e identificador de usuário obrigatórios. Em desenvolvimento, aceita HS256 com segredo local. Em produção, exige JWKS em HTTPS e valida tokens RS256 usando a chave pública publicada pelo provedor de identidade; não existe fallback para o segredo de desenvolvimento. O `sub` verificado é a única origem do identificador de cliente; não existe parâmetro para o navegador escolher outro usuário. As contas agora têm `owner_id`, as listagens filtram pelo usuário autenticado e a exclusão também exige correspondência do proprietário. Bancos antigos recebem uma migração: registros sem proprietário ficam ocultos, sem serem atribuídos automaticamente.
 
-O backend também cria a tabela `oauth_states` e inclui utilitários para gerar `state` aleatório, armazenar somente seu hash e consumi-lo uma única vez. Isso é uma base de segurança, **não habilita OAuth nem cria o login do usuário**. Ainda é necessário integrar um provedor de identidade real, publicar o serviço com HTTPS e implementar callbacks oficiais, cofre criptografado e publicação. Os seis provedores continuam desativados.
+O backend também cria a tabela `oauth_states` e inclui utilitários para gerar `state` aleatório, armazenar somente seu hash e consumi-lo uma única vez. Esse mecanismo já é utilizado pelo callback Meta inicial. Ainda é necessário integrar um provedor de identidade real, publicar o serviço com HTTPS, configurar credenciais/callback oficiais e testar o fluxo com contas Meta autorizadas. O fluxo inicial Meta não habilita publicação; TikTok, Pinterest, YouTube e Shopee continuam sem OAuth próprio.
 
 ## Próxima integração: Meta
 
@@ -67,7 +67,7 @@ O backend agora recusa chamadas autenticadas em produção quando a URL JWKS HTT
 - Definir segredo forte no gerenciador de segredos do provedor; nunca usar o exemplo.
 - Configurar HTTPS, domínio, CORS restrito e autenticação individual por usuário.
 - Integrar provedor de identidade real, fluxo de login/renovação e gestão de usuários; validar isolamento em todos os novos recursos.
-- Implementar OAuth oficial e cofre criptografado de tokens antes de habilitar conexão.
+- Concluir revisão e testes reais do OAuth Meta já iniciado; implementar OAuth próprio para TikTok, Pinterest, YouTube e Shopee antes de habilitar essas conexões.
 - Implementar upload, fila durável, agendador e confirmação da plataforma antes de habilitar publicação.
 - Fazer revisão de segurança, privacidade/LGPD, backups e política de retenção.
 

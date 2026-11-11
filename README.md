@@ -3,10 +3,16 @@
 > Seu conteúdo. Suas redes. Seu controle.
 
 ## O que é
-Sistema de gerenciamento e automação de conteúdo para redes sociais. O projeto evoluiu por fases (1 a 6). A Central de integrações e o fluxo guiado estão implementados, mas conexões reais dependem da implantação do backend e das credenciais/aprovações oficiais. Sem esses serviços, a publicação permanece **assistida** (o XFLUX planeja; o usuário publica e confirma). Os números do painel inicial continuam sendo **dados de exemplo**, identificados como tal.
+O XFLUX é um robô individual de marketing e automação de postagens. Cada pessoa instala seu próprio aplicativo, conecta suas próprias redes e escolhe onde manter vídeos, imagens, planilhas de legendas e agendamentos: computador, celular, Google Drive, OneDrive ou servidor particular. O XFLUX organiza a biblioteca, prepara a fila e executa as publicações permitidas pelas APIs oficiais.
 
-## Tecnologias
-React 18, TypeScript, Vite e CSS puro (tema escuro). Sem serviços pagos ou IA obrigatória. Empacotamento desktop com Tauri 2; a interface usa WebView2 no Windows. Existe um backend Python/FastAPI + SQLite com isolamento de contas por identidade verificada, proteção de sessão em produção, fluxo OAuth Meta e cofre criptografado de tokens. Ele ainda precisa de provedor de identidade, implantação HTTPS e credenciais oficiais; publicação automática não está implementada.
+**Arquitetura local-first obrigatória:** vídeos, legendas, calendário, fila, configurações, credenciais e histórico permanecem no dispositivo ou no armazenamento escolhido pelo próprio cliente. O aplicativo distribuído não depende de servidor central XFLUX e não envia dados do cliente para uma base de dados da empresa.
+
+O projeto evoluiu por fases (1 a 6). A Central de integrações informa os requisitos de cada plataforma. Os fluxos de conexão OAuth locais e as publicações por API ainda precisam ser implementados e testados individualmente. Enquanto uma integração não estiver validada, a publicação permanece **assistida** (o XFLUX planeja; o usuário publica e confirma). Os números do painel inicial continuam sendo **dados de exemplo**, identificados como tal.
+
+## Tecnologias e estado da migração local
+React 18, TypeScript, Vite e CSS puro (tema escuro). O repositório inclui empacotamento desktop com Tauri 2 e WebView2 no Windows. **Modo desktop local-first:** o aplicativo usa SQLite no perfil local do Windows para metadados, legendas, calendário, fila e histórico; os vídeos e imagens ficam na pasta escolhida pelo cliente (que pode estar em HD externo ou pasta sincronizada). Na primeira abertura após a atualização, os registros existentes no IndexedDB são importados para o SQLite sem apagar a base antiga. As credenciais OAuth ficam no cofre nativo do Windows. Preferências simples da interface permanecem no perfil local do aplicativo. O modo navegador continua usando IndexedDB e a API de pastas do navegador.
+
+Há código experimental antigo de backend Python/FastAPI no repositório. Ele é legado, não faz parte do aplicativo distribuído, não deve ser implantado nem receber dados ou credenciais de clientes. O aplicativo desktop não deve chamar nem depender desse backend. A pasta `backend/` permanece no repositório apenas como legado de desenvolvimento e não deve ser implantada nem receber dados ou credenciais de clientes. Publicação automática ainda não está implementada.
 
 ## Instalação no Windows
 
@@ -55,11 +61,11 @@ docs/          TESTES.md
 - Estados vazios, avisos de funcionalidade indisponível e layout responsivo (menu recolhível em telas estreitas).
 
 ## Situação real do produto
-O aplicativo já contém biblioteca, banco de legendas, associações, calculadora, calendário, Autopilot, fila e publicação assistida. O **instalador desktop para Windows já foi compilado e validado pelo GitHub Actions** (Tauri 2 + NSIS); isso confirma a geração do instalador, mas não substitui testes de uso em diferentes computadores Windows. Ainda não é um serviço de publicação automática: faltam o servidor hospedado, autenticação de usuários, cofre de tokens, armazenamento remoto de mídia, agendador/filas e integrações aprovadas pelas plataformas. Google Drive, OneDrive, login Google e relatórios reais continuam pendentes.
+O aplicativo já contém biblioteca, banco de legendas, associações, calculadora, calendário, Autopilot, fila e publicação assistida. O **instalador desktop para Windows já foi compilado e validado pelo GitHub Actions** (Tauri 2 + NSIS); isso confirma a geração do instalador, mas não substitui testes de uso em diferentes computadores Windows. Ainda não é um serviço de publicação automática: faltam a implantação do serviço seguro, credenciais/aprovações das plataformas, integrações adicionais, worker/agendador durável e publicação por API. O conteúdo permanece no armazenamento escolhido pelo cliente. Google Drive, OneDrive, login Google e relatórios reais continuam pendentes.
 
 ## Fase 2 — Biblioteca de mídias (implementada)
 - Importação de várias imagens e vídeos, miniaturas, pré-visualização, nome/formato/tamanho/data, categorias, pesquisa, filtro por tipo e categoria, exclusão com confirmação e detecção de duplicados por hash SHA-256.
-- Arquivos copiados para uma pasta do computador (`XFLUX-Biblioteca/ANO/MÊS/`), escolhida pelo usuário. Metadados, categorias, hashes e histórico ficam em IndexedDB (persistem após fechar o app).
+- Na implementação atual, arquivos são copiados para uma pasta escolhida pelo usuário (`XFLUX-Biblioteca/ANO/MÊS/`). Metadados, categorias, hashes e histórico ficam em IndexedDB. Isso é persistência local do navegador, não ainda a camada nativa definitiva do Tauri.
 - Histórico de utilização e lógica de proteção contra repetição (dias configuráveis em Configurações), prontos para os módulos de publicação usarem. Ainda não há publicações, então esse histórico começa vazio.
 - Contrato de IA em `src/services/ai.ts`; nenhum modelo conectado.
 - Detalhes, limitações e testes: `docs/FASE2.md`.
@@ -72,23 +78,23 @@ O aplicativo já contém biblioteca, banco de legendas, associações, calculado
 - **FLUX Caption Bank**: importação de legendas por XLSX/CSV com mapeamento de colunas, validação, duplicadas, edição, filtros, cópia, controle de uso e exportação.
 - **Associar vídeos e legendas** com sugestões que mostram o motivo e tela de revisão; **Calculadora de conteúdo**; **Calendário editorial** (semana, mês, próximas); **FLUX Autopilot** (ciclos, alertas e renovação); adaptadores por rede (todos "não conectado", nada simulado); **Guia do FLUX** em 8 etapas e Central de ajuda.
 - Não exige IA nem Ollama. A geração de legendas pode ser feita em qualquer ferramenta externa; o XFLUX importa XLSX/CSV. Nenhuma dependência nova.
-- Publicação automática (inclusive com o computador desligado) **não existe**: exigirá backend e agendador em nuvem.
+- Publicação automática ainda **não existe**. A meta local-first é executar o agendador no dispositivo do usuário enquanto ele estiver ligado e o XFLUX estiver autorizado/em execução; publicação com o dispositivo desligado exigiria um serviço remoto opcional e não deve ser tratada como requisito padrão.
 - Funcionalidades, regras, pendências, dependências e relatório de testes: `docs/FASE4.md`.
 
 ## Fase 5 — Integrações e publicação (estrutura e publicação assistida)
-- **Central de integrações** (menu Redes sociais): servidor do XFLUX, estado de cada conta (conectada, perto de expirar, expirada, revogada, com erro), requisitos oficiais de cada rede com fontes, e o que falta para publicar automaticamente.
+- **Central de integrações** (menu Redes sociais): seleção de redes para o plano, requisitos oficiais de cada plataforma, estado honesto de conexão local e o que falta para publicar automaticamente. Não depende de servidor central.
 - **Fila de publicações** com painel de status, histórico de tentativas, tratamento de erros e nova tentativa; **publicação assistida** integrada ao calendário.
-- Nenhuma rede é publicada automaticamente ainda e nenhuma aparece como conectada sem um servidor do XFLUX confirmar. "Publicada" = confirmada pelo usuário.
-- Arquitetura do servidor e do agendador em nuvem (futuro), contrato da API e pesquisa oficial de cada plataforma: `docs/ARQUITETURA-FASE5.md`, `docs/BACKEND-CONTRATO.md`, `docs/openapi-backend.yaml`, `docs/INTEGRACOES-OFICIAIS.md`.
+- Nenhuma rede é publicada automaticamente nesta versão. Nenhuma aparece como conectada sem autorização local real. "Publicada" = confirmada pelo usuário até existir confirmação oficial da API.
+- Arquitetura local-first, pesquisa oficial das plataformas e limites das integrações: `docs/ARQUITETURA-FASE5.md` e `docs/INTEGRACOES-OFICIAIS.md`. Os contratos de backend são documentos legados.
 - Funcionalidades, dependências externas, pendências e relatório de testes: `docs/FASE5.md`. Sem banco novo e sem dependências novas.
 
 
 ## Fase 6 — Conexões guiadas (interface e preparação de implantação)
 
 - Navegação rápida Voltar, Início e Avançar no cabeçalho.
-- Configuração técnica escondida na área avançada; o endereço central pode ser injetado pelo mantenedor na compilação com `VITE_XFLUX_API_URL`, sem exigir que o usuário final configure servidor.
-- Ao voltar do navegador OAuth, a Central de integrações atualiza automaticamente o estado das contas.
-- Instagram/Facebook têm fluxo Meta no backend por Facebook Login; Instagram exige conta profissional vinculada a Página. TikTok e Shopee Video continuam assistidos, sem OAuth/publicação implementados.
+- A Central de integrações não solicita URL, token, chave nem configuração de servidor.
+- A atualização de estado por OAuth local será habilitada quando os fluxos nativos de cada plataforma estiverem implementados.
+- Os fluxos OAuth locais e publicação real ainda precisam ser implementados e testados rede por rede. O protótipo Meta no backend é legado e não está integrado ao aplicativo.
 - A arquitetura prioriza hospedagem gratuita, mas nenhum serviço gratuito é declarado como implantado ou permanente antes da validação dos limites, persistência e disponibilidade.
 - Escopo, limitações, implantação e critérios de aceite: `docs/FASE6.md`.
 
