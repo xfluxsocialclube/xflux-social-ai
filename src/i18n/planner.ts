@@ -135,7 +135,7 @@ export const planPt = {
   'ap.renewText': 'Para renovar com novos conteúdos: 1) importe novos vídeos na Biblioteca, 2) importe novas legendas, 3) aprove as associações. Depois volte aqui e escolha "Continuar com as mesmas configurações".',
   'ap.history': 'Ciclos anteriores', 'ap.histCounts': '{p} publicadas de {n} previstas',
   /* Redes */
-  'net.assistedIntro': 'Publicação assistida: o XFLUX organiza o que publicar e quando, e você publica na própria rede e confirma aqui.',
+  'net.assistedIntro': 'O fluxo de conexão do YouTube foi adicionado e aguarda validação no Windows. As demais redes ainda não estão habilitadas. A publicação automática ainda não foi implementada.'
   'net.usePlan': 'Usar no planejamento',
   'net.stage.assisted': 'Somente publicação assistida. Só será automática se existir uma API oficial adequada.',
   'net.stage.validate': 'Integração oficial ainda a ser validada. Por enquanto, publicação assistida.',
@@ -296,7 +296,7 @@ export const planEn: PlanDict = {
   'ap.contActive': 'New cycle created and activated.', 'ap.contDraft': 'New cycle created as a draft: content is missing for {n} time slots. Review and activate it in the calendar.',
   'ap.renewText': 'To renew with new content: 1) import new videos in the Library, 2) import new captions, 3) approve the matches. Then come back here and choose "Continue with the same settings".',
   'ap.history': 'Previous cycles', 'ap.histCounts': '{p} published out of {n} planned',
-  'net.assistedIntro': 'Assisted posting: XFLUX organizes what to post and when, and you post on the network yourself and confirm here.',
+  'net.assistedIntro': 'The YouTube connection flow has been added and is awaiting Windows validation. The other networks are not enabled yet. Automatic publishing has not been implemented.'
   'net.usePlan': 'Use in planning',
   'net.stage.assisted': 'Assisted posting only. It will only be automatic if a suitable official API exists.',
   'net.stage.validate': 'Official integration still to be validated. For now, assisted posting.',
@@ -451,7 +451,7 @@ export const planEs: PlanDict = {
   'ap.contActive': 'Nuevo ciclo creado y activado.', 'ap.contDraft': 'Nuevo ciclo creado como borrador: falta contenido en {n} horarios. Revísalo y actívalo en el calendario.',
   'ap.renewText': 'Para renovar con contenidos nuevos: 1) importa nuevos videos en la Biblioteca, 2) importa nuevos textos, 3) aprueba las asociaciones. Luego vuelve aquí y elige "Continuar con la misma configuración".',
   'ap.history': 'Ciclos anteriores', 'ap.histCounts': '{p} publicadas de {n} previstas',
-  'net.assistedIntro': 'Publicación asistida: XFLUX organiza qué publicar y cuándo, y tú publicas en la propia red y confirmas aquí.',
+  'net.assistedIntro': 'Se ha añadido el flujo de conexión de YouTube y está pendiente de validación en Windows. Las demás redes aún no están habilitadas. La publicación automática todavía no está implementada.'
   'net.usePlan': 'Usar en la planificación',
   'net.stage.assisted': 'Solo publicación asistida. Solo será automática si existe una API oficial adecuada.',
   'net.stage.validate': 'Integración oficial aún por validar. Por ahora, publicación asistida.',
