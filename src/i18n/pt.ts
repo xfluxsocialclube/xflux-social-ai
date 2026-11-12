@@ -58,7 +58,6 @@ export const pt = {
   'mod.help': 'Guias passo a passo e respostas para as dúvidas mais comuns.',
   'mod.emptyTitle': 'Nada por aqui ainda',
   'net.intro': 'As conexões compatíveis são feitas diretamente pelo aplicativo, usando o navegador oficial e o cofre seguro do Windows. Algumas redes exigem configurações próprias; veja o assistente de cada rede.',
-  'net.assistedIntro': 'O fluxo de conexão do YouTube foi adicionado e aguarda validação no Windows. As demais redes ainda não estão habilitadas. A publicação automática ainda não foi implementada.',
   'net.status': 'Não conectada',
   'net.connect': 'Conectar',
   'net.connectHint': 'A conexão será liberada em uma fase futura.',
