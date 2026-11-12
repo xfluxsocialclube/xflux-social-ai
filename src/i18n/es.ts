@@ -59,7 +59,6 @@ export const es: Dictionary = {
   'mod.help': 'Guías paso a paso y respuestas a las dudas más comunes.',
   'mod.emptyTitle': 'Aún no hay nada aquí',
   'net.intro': 'Las conexiones compatibles se realizan directamente desde la aplicación, usando el navegador oficial y el almacén seguro de Windows. Algunas redes requieren su propia configuración; sigue el asistente de cada red.',
-  'net.assistedIntro': 'Se ha añadido el flujo de conexión de YouTube y está pendiente de validación en Windows. Las demás redes aún no están habilitadas. La publicación automática todavía no está implementada.',
   'net.status': 'No conectada',
   'net.connect': 'Conectar',
   'net.connectHint': 'La conexión se habilitará en una fase futura.',
