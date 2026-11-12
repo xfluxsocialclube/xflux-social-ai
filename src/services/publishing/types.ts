@@ -41,11 +41,11 @@ export type Blocker =
   | 'no-backend' | 'backend-unreachable' | 'provider-not-enabled' | 'no-account' | 'token-expired' | 'token-revoked' | 'account-error'
   | 'not-officially-available' | 'policy-requires-user' | 'backend-no-publishing' | 'official-review-pending' | 'api-submit-not-implemented';
 
-/** Estado de uma conta conectada. Só existe quando um servidor do XFLUX confirmou a autorização. */
+/** Estado de uma conta conectada, após autorização oficial validada e registrada localmente. */
 export type AccountState = 'connected' | 'expiring' | 'expired' | 'revoked' | 'error';
 export interface ConnectedAccount {
   id: string; network: string; displayName: string; state: 'connected' | 'expired' | 'revoked' | 'error';
   scopes: string[]; connectedAt: string; expiresAt: string | null; lastCheckedAt: string; lastError?: { code: string; message: string };
 }
-/** Situação mostrada ao usuário para uma rede. 'not-connected' = nenhuma conta verificada por servidor. */
+/** Situação mostrada ao usuário para uma rede. 'not-connected' = nenhuma conta autorizada e registrada neste computador. */
 export type ConnectionView = 'not-connected' | AccountState;

@@ -16,6 +16,9 @@ const PATHS: Record<string, string> = {
   publishing: 'M3 12l18-8-6 16-3-7zM12 13l9-9',
   autopilot: 'M12 3l8 4v5c0 4-3 7-8 9-5-2-8-5-8-9V7zM9 12l2 2 4-4',
   menu: 'M4 6h16M4 12h16M4 18h16',
+  back: 'M19 12H5M12 19l-7-7 7-7',
+  home: 'M3 10.5L12 3l9 7.5M5.5 9.5V21h13V9.5M9 21v-7h6v7',
+  next: 'M5 12h14M12 5l7 7-7 7',
 };
 export function Icon({ name, size = 20 }: { name: string; size?: number }) {
   return (

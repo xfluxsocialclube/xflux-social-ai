@@ -1,6 +1,8 @@
 /**
- * Cliente do servidor do XFLUX. Só funciona se o usuário (ou a empresa) configurar o endereço do servidor.
- * Sem servidor configurado, NADA é conectado e nada é simulado. Nenhum segredo de rede social passa por aqui.
+ * Cliente do servidor do XFLUX. O endereço público é injetado na compilação pelo mantenedor
+ * (VITE_XFLUX_API_URL); o usuário final não precisa configurar servidor ou chave.
+ * A configuração local continua disponível apenas para testes/administração. Sem servidor,
+ * NADA é conectado e nada é simulado. Nenhum segredo de rede social passa por aqui.
  */
 import { loadSetting, saveSetting } from '../settings';
 import { parseAccounts, parseHealth, parseOAuthStart, type HealthResponse, type OAuthStartResponse } from './contract';
@@ -12,10 +14,12 @@ export class BackendError extends Error {
 }
 const TIMEOUT_MS = 8000;
 const TOKEN_KEY = 'xflux.backend.token';
+const INSTALLATION_KEY = 'xflux.installation.key';
 
-export const getBackendUrl = () => loadSetting<string>('backend.url', '');
+const BUILT_IN_BACKEND_URL = (import.meta.env.VITE_XFLUX_API_URL ?? '').trim().replace(/\/+$/, '');
+export const getBackendUrl = () => BUILT_IN_BACKEND_URL || loadSetting<string>('backend.url', '');
 export function setBackendUrl(url: string) { saveSetting('backend.url', url.trim().replace(/\/+$/, '')); }
-/** Token de SESSÃO do XFLUX (não é token de rede social). Fica só na sessão do navegador. */
+/** JWT de sessão XFLUX emitido pelo provedor de identidade configurado (não é token de rede social). Fica só na sessão do navegador. */
 export const getSessionToken = (): string => { try { return sessionStorage.getItem(TOKEN_KEY) ?? ''; } catch { return ''; } };
 export function setSessionToken(t: string) { try { if (t) sessionStorage.setItem(TOKEN_KEY, t); else sessionStorage.removeItem(TOKEN_KEY); } catch { /* sem armazenamento: segue sem token */ } }
 
@@ -28,14 +32,59 @@ export function validateBackendUrl(raw: string): boolean {
   } catch { return false; }
 }
 
+function getInstallationKey(): string {
+  try {
+    let key = localStorage.getItem(INSTALLATION_KEY) ?? '';
+    if (/^[0-9a-f]{64}$/i.test(key)) return key;
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    key = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    localStorage.setItem(INSTALLATION_KEY, key);
+    return key;
+  } catch {
+    throw new BackendError('unreachable');
+  }
+}
+
+/** Sessão anônima por instalação: o cliente não cria conta XFLUX nem informa servidor/token. */
+async function ensureDeviceSession(base: string, force = false): Promise<string> {
+  if (!force && getSessionToken()) return getSessionToken();
+  const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  try {
+    const response = await fetch(`${base}/v1/device/session`, {
+      method: 'POST', signal: ctrl.signal, credentials: 'omit',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ installationKey: getInstallationKey() }),
+    });
+    if (!response.ok) throw new BackendError(response.status === 401 ? 'unauthorized' : 'http', response.status);
+    const data: unknown = await response.json();
+    if (!data || typeof data !== 'object' || !('accessToken' in data) || typeof data.accessToken !== 'string') throw new BackendError('invalid-response');
+    setSessionToken(data.accessToken);
+    return data.accessToken;
+  } catch (e) {
+    if (e instanceof BackendError) throw e;
+    throw new BackendError('unreachable');
+  } finally { clearTimeout(timer); }
+}
+
 async function call(path: string, init: RequestInit = {}): Promise<unknown> {
   const base = getBackendUrl();
   if (!base) throw new BackendError('not-configured');
   if (!validateBackendUrl(base)) throw new BackendError('invalid-url');
-  const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-  const token = getSessionToken();
+  const authenticated = path !== '/v1/health' && path !== '/v1/device/session';
+  const send = async (token: string) => {
+    const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    try {
+      return await fetch(`${base}${path}`, { ...init, signal: ctrl.signal, credentials: 'omit', headers: { Accept: 'application/json', ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
+    } finally { clearTimeout(timer); }
+  };
   try {
-    const res = await fetch(`${base}${path}`, { ...init, signal: ctrl.signal, credentials: 'omit', headers: { Accept: 'application/json', ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) } });
+    let token = authenticated ? await ensureDeviceSession(base) : '';
+    let res = await send(token);
+    if (res.status === 401 && authenticated) {
+      token = await ensureDeviceSession(base, true);
+      res = await send(token);
+    }
     if (res.status === 401 || res.status === 403) throw new BackendError('unauthorized', res.status);
     if (!res.ok) throw new BackendError('http', res.status);
     if (res.status === 204) return null;
@@ -43,7 +92,7 @@ async function call(path: string, init: RequestInit = {}): Promise<unknown> {
   } catch (e) {
     if (e instanceof BackendError) throw e;
     throw new BackendError('unreachable');
-  } finally { clearTimeout(timer); }
+  }
 }
 
 export async function health(): Promise<HealthResponse> {

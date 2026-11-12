@@ -1,10 +1,15 @@
 import type { Dictionary } from './pt';
+import { captionsEn } from './captions';
 import { libEn } from './library';
 import { aiEn } from './ai';
 import { planEn } from './planner';
 import { pubEn } from './publishing';
 
 export const en: Dictionary = {
+  'nav.quickNavigation': 'Quick navigation',
+  'nav.previous': 'Back',
+  'nav.home': 'Home',
+  'nav.next': 'Next',
   'app.slogan': 'Your content. Your networks. Your control.',
   'nav.overview': 'Overview',
   'nav.library': 'Content library',
@@ -53,7 +58,7 @@ export const en: Dictionary = {
   'mod.goodmorning': 'Your daily summary with FLUX: priorities, times and suggestions.',
   'mod.help': 'Step-by-step guides and answers to common questions.',
   'mod.emptyTitle': 'Nothing here yet',
-  'net.intro': 'No network shows as connected unless an XFLUX server confirms the authorization. Without a server, posting is assisted.',
+  'net.intro': 'Supported connections are made directly by the app, using the official browser and Windows secure vault. Some networks require their own setup; follow each network’s assistant.',
   'net.status': 'Not connected',
   'net.connect': 'Connect',
   'net.connectHint': 'Connection will be released in a future phase.',
@@ -71,5 +76,6 @@ export const en: Dictionary = {
   ...libEn,
   ...aiEn,
   ...planEn,
+  ...captionsEn,
   ...pubEn,
 };

@@ -1,117 +1,348 @@
 openapi: 3.0.3
 info:
-  title: XFLUX Backend (contrato v1)
+  title: XFLUX Backend (contrato implementado v1)
   version: "1"
   description: >
-    Contrato entre o aplicativo XFLUX e o servidor central. O servidor guarda segredos e tokens das redes;
-    o aplicativo recebe apenas o estado das contas. Endpoints marcados x-status "planned" ainda não são usados pelo aplicativo.
+    Estado real do protótipo. Endpoints protegidos validam JWT e isolam contas pelo subject verificado. O fluxo OAuth inicial da Meta (Facebook/Instagram) está implementado, mas depende de emissor JWT, credenciais Meta, callback HTTPS e chave Fernet configurados. Publicação ainda está desativada.
 servers:
-  - url: https://api.exemplo.com
-security:
-  - sessionBearer: []
+  - url: https://api.example.invalid
+security: []
 paths:
-  /v1/health:
+  /v1/device/session:
+    post:
+      summary: Cria uma sessão curta vinculada a uma instalação individual do XFLUX
+      description: Recebe uma chave aleatória criada localmente. Não exige login central nem recebe arquivos de mídia.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [installationKey]
+              properties:
+                installationKey:
+                  type: string
+                  pattern: '^[0-9a-fA-F]{64}  /v1/health:
     get:
       operationId: health
-      x-status: used
+      summary: Capacidades realmente disponíveis
       responses:
-        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Health" } } } }
+        "200":
+          description: Estado do backend; OAuth e publicação permanecem desativados.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
   /v1/accounts:
     get:
       operationId: listAccounts
-      x-status: used
+      summary: Lista metadados pertencentes ao usuário autenticado
+      security:
+        - sessionBearer: []
       responses:
-        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Accounts" } } } }
-        "401": { description: Não autorizado }
-  /v1/accounts/{id}:
+        "200":
+          description: Metadados das contas pertencentes ao subject autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Accounts"
+        "401":
+          description: Sessão ausente ou incorreta
+        "503":
+          description: Configuração JWT ou de produção ausente/insegura
+  /v1/accounts/{account_id}:
     delete:
-      operationId: disconnectAccount
-      x-status: used
-      parameters: [ { name: id, in: path, required: true, schema: { type: string } } ]
+      operationId: deleteAccountMetadata
+      summary: Apaga metadados locais; não revoga na plataforma
+      security:
+        - sessionBearer: []
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        "204": { description: Autorização revogada e apagada }
+        "204":
+          description: Metadados locais apagados
+        "401":
+          description: Sessão ausente ou incorreta
+        "503":
+          description: Configuração segura indisponível
   /v1/oauth/{network}/start:
     post:
       operationId: startOAuth
-      x-status: used
-      parameters: [ { name: network, in: path, required: true, schema: { type: string, enum: [instagram, facebook, tiktok, shopee, pinterest, youtube] } } ]
-      requestBody:
-        required: false
-        content: { application/json: { schema: { type: object, properties: { reconnectAccountId: { type: string } } } } }
+      summary: Bloqueado até implementação OAuth real
+      security:
+        - sessionBearer: []
+      parameters:
+        - name: network
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [instagram, facebook, tiktok, shopee, pinterest, youtube]
       responses:
-        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/OAuthStart" } } } }
-  /v1/uploads:
-    post:
-      operationId: createUpload
-      x-status: planned
-      responses: { "201": { description: Upload retomável criado (devolve mediaRef) } }
-  /v1/publications/{clientPostId}:
-    parameters: [ { name: clientPostId, in: path, required: true, schema: { type: string } } ]
-    put:
-      operationId: upsertPublication
-      x-status: planned
-      requestBody:
-        required: true
-        content: { application/json: { schema: { $ref: "#/components/schemas/PublicationJob" } } }
-      responses: { "200": { description: Job criado ou atualizado (idempotente) } }
-    get:
-      operationId: getPublication
-      x-status: planned
-      responses: { "200": { description: Estado e tentativas, content: { application/json: { schema: { $ref: "#/components/schemas/PublicationStatus" } } } } }
-    delete:
-      operationId: cancelPublication
-      x-status: planned
-      responses: { "204": { description: Cancelado } }
+        "200":
+          description: URL oficial de autorização Meta e validade do state.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authorizationUrl, expiresInSeconds]
+                properties:
+                  authorizationUrl:
+                    type: string
+                    format: uri
+                  expiresInSeconds:
+                    type: integer
+        "503":
+          description: Sessão, credenciais Meta ou configuração OAuth ausentes; rede não suportada
+        "401":
+          description: Sessão ausente ou incorreta
+        "404":
+          description: Rede desconhecida
 components:
   securitySchemes:
-    sessionBearer: { type: http, scheme: bearer, description: Chave de sessão do XFLUX (não é token de rede social) }
+    sessionBearer:
+      type: http
+      scheme: bearer
+      description: JWT assinado HS256 pelo emissor configurado; deve conter iss, aud, sub, iat e exp válidos. Não é token de rede social.
   schemas:
     Health:
       type: object
       required: [service, apiVersion, capabilities, providers]
       properties:
-        service: { type: string, enum: [xflux-backend] }
-        apiVersion: { type: string, enum: ["1"] }
-        capabilities: { type: array, items: { type: string, enum: [accounts, oauth, publishing, scheduler] } }
+        service:
+          type: string
+          enum: [xflux-backend]
+        apiVersion:
+          type: string
+          enum: ["1"]
+        capabilities:
+          type: array
+          items:
+            type: string
+            enum: [accounts, oauth]
         providers:
           type: array
-          items: { type: object, required: [network, oauth, publishing], properties: { network: { type: string }, oauth: { type: boolean }, publishing: { type: boolean } } }
+          items:
+            type: object
+            required: [network, oauth, publishing]
+            properties:
+              network:
+                type: string
+              oauth:
+                type: boolean
+                enum: [false, true]
+              publishing:
+                type: boolean
+                enum: [false]
     Account:
       type: object
       required: [id, network, displayName, state, scopes, connectedAt, lastCheckedAt]
       properties:
-        id: { type: string }
-        network: { type: string }
-        displayName: { type: string }
-        state: { type: string, enum: [connected, expired, revoked, error] }
-        scopes: { type: array, items: { type: string } }
-        connectedAt: { type: string, format: date-time }
-        expiresAt: { type: string, format: date-time, nullable: true }
-        lastCheckedAt: { type: string, format: date-time }
-        lastError: { type: object, properties: { code: { type: string }, message: { type: string } } }
+        id:
+          type: string
+        network:
+          type: string
+        displayName:
+          type: string
+        state:
+          type: string
+          enum: [connected, expired, revoked, error]
+        scopes:
+          type: array
+          items:
+            type: string
+        connectedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastCheckedAt:
+          type: string
+          format: date-time
+        lastError:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
     Accounts:
       type: object
       required: [accounts]
-      properties: { accounts: { type: array, items: { $ref: "#/components/schemas/Account" } } }
-    OAuthStart:
-      type: object
-      required: [authorizationUrl, expiresInSeconds]
-      properties: { authorizationUrl: { type: string, format: uri, description: Sempre https }, expiresInSeconds: { type: integer } }
-    PublicationJob:
-      type: object
-      required: [network, accountId, mediaRef, scheduledAtUtc, timeZone]
       properties:
-        network: { type: string }
-        accountId: { type: string }
-        mediaRef: { type: string }
-        fields: { type: object, additionalProperties: { type: string } }
-        scheduledAtUtc: { type: string, format: date-time }
-        timeZone: { type: string, description: Nome IANA, ex. America/Sao_Paulo }
-    PublicationStatus:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Account"
+
+      responses:
+        '200':
+          description: Sessão curta emitida pelo servidor
+        '400':
+          description: Chave de instalação inválida
+        '503':
+          description: Serviço de sessão não configurado
+  /v1/health:
+    get:
+      operationId: health
+      summary: Capacidades realmente disponíveis
+      responses:
+        "200":
+          description: Estado do backend; OAuth e publicação permanecem desativados.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /v1/accounts:
+    get:
+      operationId: listAccounts
+      summary: Lista metadados pertencentes ao usuário autenticado
+      security:
+        - sessionBearer: []
+      responses:
+        "200":
+          description: Metadados das contas pertencentes ao subject autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Accounts"
+        "401":
+          description: Sessão ausente ou incorreta
+        "503":
+          description: Configuração JWT ou de produção ausente/insegura
+  /v1/accounts/{account_id}:
+    delete:
+      operationId: deleteAccountMetadata
+      summary: Apaga metadados locais; não revoga na plataforma
+      security:
+        - sessionBearer: []
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Metadados locais apagados
+        "401":
+          description: Sessão ausente ou incorreta
+        "503":
+          description: Configuração segura indisponível
+  /v1/oauth/{network}/start:
+    post:
+      operationId: startOAuth
+      summary: Bloqueado até implementação OAuth real
+      security:
+        - sessionBearer: []
+      parameters:
+        - name: network
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [instagram, facebook, tiktok, shopee, pinterest, youtube]
+      responses:
+        "200":
+          description: URL oficial de autorização Meta e validade do state.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authorizationUrl, expiresInSeconds]
+                properties:
+                  authorizationUrl:
+                    type: string
+                    format: uri
+                  expiresInSeconds:
+                    type: integer
+        "503":
+          description: Sessão, credenciais Meta ou configuração OAuth ausentes; rede não suportada
+        "401":
+          description: Sessão ausente ou incorreta
+        "404":
+          description: Rede desconhecida
+components:
+  securitySchemes:
+    sessionBearer:
+      type: http
+      scheme: bearer
+      description: JWT assinado HS256 pelo emissor configurado; deve conter iss, aud, sub, iat e exp válidos. Não é token de rede social.
+  schemas:
+    Health:
       type: object
+      required: [service, apiVersion, capabilities, providers]
       properties:
-        state: { type: string, enum: [queued, processing, published, failed] }
-        confirmedBy: { type: string, enum: [platform] }
-        externalId: { type: string }
-        errorCode: { type: string }
-        attempts: { type: array, items: { type: object, properties: { at: { type: string, format: date-time }, outcome: { type: string }, errorCode: { type: string } } } }
+        service:
+          type: string
+          enum: [xflux-backend]
+        apiVersion:
+          type: string
+          enum: ["1"]
+        capabilities:
+          type: array
+          items:
+            type: string
+            enum: [accounts, oauth]
+        providers:
+          type: array
+          items:
+            type: object
+            required: [network, oauth, publishing]
+            properties:
+              network:
+                type: string
+              oauth:
+                type: boolean
+                enum: [false, true]
+              publishing:
+                type: boolean
+                enum: [false]
+    Account:
+      type: object
+      required: [id, network, displayName, state, scopes, connectedAt, lastCheckedAt]
+      properties:
+        id:
+          type: string
+        network:
+          type: string
+        displayName:
+          type: string
+        state:
+          type: string
+          enum: [connected, expired, revoked, error]
+        scopes:
+          type: array
+          items:
+            type: string
+        connectedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastCheckedAt:
+          type: string
+          format: date-time
+        lastError:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    Accounts:
+      type: object
+      required: [accounts]
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Account"
