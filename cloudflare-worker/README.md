@@ -23,7 +23,9 @@ The token is not returned to the desktop application. Publishing/API proxy endpo
    - `META_CONFIG_ID`: Facebook Login for Business configuration ID.
    - `META_REDIRECT_URI`: the deployed Worker callback URL ending in `/oauth/meta/callback`.
    - `TOKEN_ENCRYPTION_KEY`: base64 encoding of 32 cryptographically random bytes.
-5. Deploy with Wrangler. Add the exact deployed callback URL to the Meta configuration's valid redirect URIs.
+5. In Cloudflare Workers Builds, connect this repository and set **Root directory** to `cloudflare-worker` (not `/`). Set **Build command** to `npm install` and **Deploy command** to `npm run deploy`. Do not use the root application's `npm run build` for this Worker.
+6. Deploy only after the D1 database ID has replaced the placeholder and the D1 schema has been applied.
+7. Add the exact deployed callback URL to the Meta configuration's valid redirect URIs.
 
 ## Important
 
