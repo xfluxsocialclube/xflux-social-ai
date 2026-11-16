@@ -1,10 +1,15 @@
 import type { Dictionary } from './pt';
+import { captionsEs } from './captions';
 import { libEs } from './library';
 import { aiEs } from './ai';
 import { planEs } from './planner';
 import { pubEs } from './publishing';
 
 export const es: Dictionary = {
+  'nav.quickNavigation': 'Navegación rápida',
+  'nav.previous': 'Volver',
+  'nav.home': 'Inicio',
+  'nav.next': 'Siguiente',
   'app.slogan': 'Tu contenido. Tus redes. Tu control.',
   'nav.overview': 'Resumen general',
   'nav.library': 'Biblioteca de contenidos',
@@ -53,7 +58,7 @@ export const es: Dictionary = {
   'mod.goodmorning': 'Tu resumen diario con FLUX: prioridades, horarios y sugerencias.',
   'mod.help': 'Guías paso a paso y respuestas a las dudas más comunes.',
   'mod.emptyTitle': 'Aún no hay nada aquí',
-  'net.intro': 'Ninguna red aparece como conectada sin que un servidor de XFLUX confirme la autorización. Sin servidor, la publicación es asistida.',
+  'net.intro': 'Las conexiones compatibles se realizan directamente desde la aplicación, usando el navegador oficial y el almacén seguro de Windows. Algunas redes requieren su propia configuración; sigue el asistente de cada red.',
   'net.status': 'No conectada',
   'net.connect': 'Conectar',
   'net.connectHint': 'La conexión se habilitará en una fase futura.',
@@ -71,5 +76,6 @@ export const es: Dictionary = {
   ...libEs,
   ...aiEs,
   ...planEs,
+  ...captionsEs,
   ...pubEs,
 };

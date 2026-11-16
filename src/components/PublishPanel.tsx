@@ -7,7 +7,6 @@ import { fmt } from '../i18n/format';
 import type { TranslationKey } from '../i18n/pt';
 import type { Caption } from '../services/captions/types';
 import type { MediaItem } from '../services/library/types';
-import { loadSnapshot } from '../services/backend/accounts';
 import { buildPackage, planRoute } from '../services/publishing/delivery';
 import { ERROR_INFO } from '../services/publishing/errors';
 import { confirmedBy, queueState, reportFailure, retryPost, startAssisted } from '../services/publishing/queue';
@@ -19,7 +18,7 @@ const REPORTABLE: ErrorCode[] = ['user-reported', 'media-invalid', 'platform-rej
 /** Como publicar esta publicação AGORA (assistido), o que falta para ser automática, e o histórico de tentativas. */
 export function PublishPanel({ post, media, caption, onChanged }: { post: PlannedPost; media?: MediaItem; caption?: Caption; onChanged: () => void }) {
   const { t, locale } = useI18n();
-  const route = useMemo(() => planRoute(post.network, loadSnapshot()), [post.network]);
+  const route = useMemo(() => planRoute(post.network), [post.network]);
   const pkg = useMemo(() => buildPackage(post, caption, media), [post, caption, media]);
   const [failing, setFailing] = useState(false); const [code, setCode] = useState<ErrorCode>('user-reported'); const [note, setNote] = useState(''); const [err, setErr] = useState(false);
   const state = queueState(post); const attempts = post.delivery?.attempts ?? [];

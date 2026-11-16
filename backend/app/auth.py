@@ -1,0 +1,136 @@
+"""Validação e emissão de sessões individuais por instalação do XFLUX.
+
+O servidor assina sessões curtas com um segredo privado. A instalação apresenta
+uma chave aleatória de alta entropia, guardada localmente; o subject é derivado
+por hash. Nunca se recebe um ID de cliente escolhido livremente no corpo.
+Tokens externos/JWKS permanecem suportados como modo alternativo legado.
+"""
+from __future__ import annotations
+
+import os
+import hashlib
+import time
+from functools import lru_cache
+from urllib.parse import urlsplit
+
+import jwt
+from fastapi import HTTPException
+
+
+@lru_cache(maxsize=4)
+def _jwks_client(url: str) -> jwt.PyJWKClient:
+    """Reuse the JWKS client so its key-set cache survives between requests."""
+    return jwt.PyJWKClient(url, cache_jwk_set=True, lifespan=300, timeout=5)
+
+
+def _decode_production_token(token: str, issuer: str, audience: str) -> dict:
+    jwks_url = os.getenv("XFLUX_JWKS_URL", "").strip()
+    parsed = urlsplit(jwks_url)
+    if (
+        parsed.scheme != "https"
+        or not parsed.netloc
+        or parsed.username
+        or parsed.password
+        or parsed.fragment
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail="A valid HTTPS identity JWKS URL is required in production",
+        )
+
+    try:
+        signing_key = _jwks_client(jwks_url).get_signing_key_from_jwt(token).key
+    except jwt.PyJWKClientConnectionError:
+        raise HTTPException(
+            status_code=503, detail="Identity provider is temporarily unavailable"
+        ) from None
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Unauthorized") from None
+
+    try:
+        return jwt.decode(
+            token,
+            signing_key,
+            algorithms=["RS256"],
+            issuer=issuer,
+            audience=audience,
+            options={"require": ["exp", "iat", "iss", "aud", "sub"]},
+        )
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Unauthorized") from None
+
+
+def _decode_development_token(token: str, issuer: str, audience: str) -> dict:
+    secret = os.getenv("XFLUX_JWT_SECRET", "")
+    if len(secret) < 32:
+        raise HTTPException(
+            status_code=503,
+            detail="A development JWT secret with at least 32 characters is required",
+        )
+    try:
+        return jwt.decode(
+            token,
+            secret,
+            algorithms=["HS256"],
+            issuer=issuer,
+            audience=audience,
+            options={"require": ["exp", "iat", "iss", "aud", "sub"]},
+        )
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Unauthorized") from None
+
+
+def device_session_secret() -> str:
+    """Chave privada do servidor para emitir sessões por instalação, sem login central."""
+    return os.getenv("XFLUX_DEVICE_SESSION_SECRET", "").strip()
+
+
+def issue_device_session(installation_key: str) -> str:
+    """Emite JWT curto vinculado a uma chave aleatória criada e guardada no próprio dispositivo."""
+    secret = device_session_secret()
+    issuer = os.getenv("XFLUX_JWT_ISSUER", "").strip()
+    audience = os.getenv("XFLUX_JWT_AUDIENCE", "").strip()
+    if len(secret) < 32 or not issuer or not audience:
+        raise HTTPException(status_code=503, detail="Device sessions are not configured")
+    subject = "device-" + hashlib.sha256(installation_key.encode("ascii")).hexdigest()
+    now = int(time.time())
+    return jwt.encode(
+        {"sub": subject, "iss": issuer, "aud": audience, "iat": now, "exp": now + 86400},
+        secret, algorithm="HS256",
+    )
+
+
+def authenticated_subject(authorization: str | None) -> str:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    issuer = os.getenv("XFLUX_JWT_ISSUER", "").strip()
+    audience = os.getenv("XFLUX_JWT_AUDIENCE", "").strip()
+    if not issuer or not audience:
+        raise HTTPException(
+            status_code=503,
+            detail="XFLUX session issuer and audience are required",
+        )
+
+    token = authorization[7:].strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    device_secret = device_session_secret()
+    if len(device_secret) >= 32:
+        try:
+            claims = jwt.decode(
+                token, device_secret, algorithms=["HS256"], issuer=issuer, audience=audience,
+                options={"require": ["exp", "iat", "iss", "aud", "sub"]},
+            )
+        except jwt.PyJWTError:
+            raise HTTPException(status_code=401, detail="Unauthorized") from None
+    elif os.getenv("XFLUX_ENV", "development").lower() == "production":
+        claims = _decode_production_token(token, issuer, audience)
+    else:
+        claims = _decode_development_token(token, issuer, audience)
+
+    subject = claims.get("sub")
+    if not isinstance(subject, str) or not subject.strip() or len(subject) > 255:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return subject

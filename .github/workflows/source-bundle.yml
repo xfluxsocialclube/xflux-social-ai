@@ -1,0 +1,31 @@
+name: XFLUX source bundle
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - fix/local-first-social-connections
+
+jobs:
+  source-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar código completo
+        uses: actions/checkout@v4
+        with:
+          ref: fix/local-first-social-connections
+      - name: Preparar pacote editável
+        run: |
+          mkdir -p dist
+          zip -r dist/XFLUX-Social-AI-Codigo-Fonte.zip . \
+            -x ".git/*" \
+            -x "node_modules/*" \
+            -x "src-tauri/target/*" \
+            -x "dist/*"
+      - name: Publicar pacote para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: XFLUX-Social-AI-Codigo-Fonte
+          path: dist/XFLUX-Social-AI-Codigo-Fonte.zip
+          if-no-files-found: error
+          retention-days: 30

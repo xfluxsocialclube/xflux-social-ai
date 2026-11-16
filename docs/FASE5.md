@@ -1,53 +1,49 @@
 # Fase 5 — Integrações e publicação (estrutura + publicação assistida)
 
-Esta fase prepara o XFLUX para publicar de verdade **sem fingir nada**. Nenhuma rede é publicada automaticamente ainda:
-isso depende de um servidor, de credenciais e da aprovação dos aplicativos em cada plataforma (veja "Dependências externas").
-Fase 4 e anteriores foram preservadas; o banco **não foi migrado** (continua v3).
+## Estado real e princípio de produto
 
-## O que o usuário vê
-- **Redes sociais → Central de integrações**: estado do servidor do XFLUX, estado de cada conta (não conectada, conectada, perto de expirar, expirada, revogada, com erro), o que cada plataforma oferece oficialmente (com fontes e data da pesquisa), o que falta para publicar automaticamente e botões Conectar/Reconectar/Desconectar (ativos só quando um servidor existe e habilita a rede).
-- **Fila de publicações** (novo item no menu): painel de status (no horário, aguardando você, com falha, agendadas, publicadas, sem conteúdo), filtros por situação e rede, histórico de tentativas por publicação.
-- **Publicação assistida** (calendário e fila): dados prontos para copiar por rede (legenda/título/descrição/tags), passos, "Comecei a publicar", "Marcar como publicada" (confirmação do usuário), "Não consegui publicar" (motivo + nova tentativa sugerida) e "Tentar de novo".
-- **Alertas**: ponto no menu da Fila quando há publicação no horário ou com falha.
-- **Ajuda**: 3 perguntas novas (conexão, publicação assistida, estados da conta).
+Esta fase entrega planejamento e publicação assistida. **Nenhuma rede publica automaticamente nesta versão.** O XFLUX está sendo desenvolvido como aplicativo individual/local-first: biblioteca, vídeos, legendas, planilhas, calendário, fila e histórico pertencem ao cliente e ficam no dispositivo ou no armazenamento que ele escolher.
 
-## Regras obrigatórias — como foram cumpridas
-| Regra | Como |
-|---|---|
-| Não simular conexões | Contas só existem se vierem de um servidor (validadas pelo contrato). Sem servidor: "Não conectada" em todas. Teste automático cobre. |
-| Não mostrar conectada sem autenticação verdadeira | `connectionOf()` só devolve "conectada" para conta informada pelo servidor; servidor fora do ar → "não verificado agora". |
-| Não afirmar publicação sem confirmação da plataforma | "Publicada" só por confirmação do **usuário** (`confirmedBy: user`). `platform` está reservado ao servidor futuro. |
-| Não inventar APIs/permissões | Catálogo com fonte oficial, data e dúvidas em aberto (`docs/INTEGRACOES-OFICIAIS.md`). Onde não foi possível comprovar (Shopee Video) está dito. |
-| Se a API não permitir, informar e oferecer alternativa assistida | TikTok (regras de consentimento/auditoria) e Shopee Video ficam assistidos, com explicação na tela. |
-| Sem senhas de redes | OAuth no site oficial; o app só mostra o domínio de destino. |
-| Sem tokens secretos no frontend | Nenhum segredo no código (teste automático). Tokens ficam só no servidor; o app nunca os recebe. |
-| Sem Ollama/IA, sem custo de IA | Nada novo depende de IA. |
+O instalador Tauri 2 existe, mas a biblioteca ainda usa IndexedDB e APIs web. A migração para armazenamento nativo e execução em segundo plano local ainda está pendente. O backend é um protótipo de integração OAuth Meta, não uma plataforma de conteúdo pronta para produção.
 
-## Estrutura de código novo
-`src/services/publishing/{catalog,delivery,queue,attempts,errors,types,adapters}.ts`, `src/services/backend/{contract,client,accounts}.ts`,
-`src/pages/Networks.tsx` (reescrita como Central de integrações, mantendo os recursos anteriores), `src/pages/publishing/Queue.tsx`, `src/components/PublishPanel.tsx`,
-`src/i18n/publishing.ts` (≈180 textos em pt/en/es). Alterações pequenas em `Planner.tsx`, `plans.ts`, `App.tsx`, `Autopilot.tsx`, `Help.tsx`, `nav.ts`, `Icon.tsx`.
+## O que o usuário vê hoje
+- Central de integrações com estados reais vindos do serviço técnico, quando configurado.
+- Fila com status, filtros e histórico de tentativas.
+- Publicação assistida: pacote de texto por rede, abrir o fluxo oficial e confirmação manual pelo usuário.
+- Alertas para publicações no horário ou com falha.
 
-## Dados
-Sem nova versão do IndexedDB. Campo opcional `delivery` em `PlannedPost` (estado, quem confirmou, tentativas, próxima tentativa). Dados da Fase 4 continuam válidos (publicadas sem `delivery` = confirmadas pelo usuário). Detalhes em `docs/ARQUITETURA-FASE5.md`.
+## Regras de honestidade
+- Não inventar contas conectadas: a conta só aparece conectada após autorização real validada.
+- Não marcar publicação como concluída sem confirmação verificável; hoje a confirmação é manual do usuário.
+- Não pedir senhas de redes sociais dentro do XFLUX.
+- Não colocar segredos de aplicativos ou tokens no frontend.
+- Não transferir a biblioteca do cliente para um armazenamento central como requisito do produto.
+- Não ativar `API_PUBLISH_IMPLEMENTED` até existir envio real, testes de integração e confirmação da plataforma.
 
-## Dependências
-Nenhuma dependência nova no projeto.
+## O que o código atual faz
+`src/services/publishing/queue.ts` calcula estados e registra tentativas; não envia conteúdo. `src/services/publishing/delivery.ts` mantém `API_PUBLISH_IMPLEMENTED = false` e a rota assistida. `src/services/backend/client.ts` conversa com um serviço técnico configurado no build ou em configuração administrativa. O serviço atual exige JWT de sessão; o fluxo Meta inicial está no backend, mas não é utilizável em produção sem identidade, credenciais, callback HTTPS e revisão de segurança.
 
-## Dependências externas (o que ainda falta e por quê)
-- **Servidor do XFLUX** (autenticação, cofre de tokens, OAuth, armazenamento de mídia, agendador, workers). Contrato pronto em `docs/BACKEND-CONTRATO.md` e `docs/openapi-backend.yaml`. Não foi construído nesta fase: sem credenciais reais não há como testá-lo de forma honesta, e um servidor de mentira violaria as regras.
-- **Aplicativos aprovados em cada plataforma** (Meta: análise/acesso avançado; TikTok: auditoria; Pinterest: acesso Standard; Google: projeto OAuth e conformidade; Shopee: conta de parceiro). Credenciais e aprovações são suas.
-- **Envio por API** (`API_PUBLISH_IMPLEMENTED = false` em `delivery.ts`): só deve ser ligado depois de testado com credenciais reais.
-- Reconfirmar na documentação oficial, no momento da implementação, os pontos marcados como "reconfirmar" em `INTEGRACOES-OFICIAIS.md` (limites do Instagram, agendamento de Reels no Facebook, restrição de projetos não verificados no YouTube, endpoints da Shopee).
+## Pendências técnicas, na ordem correta
+1. **Concluir o aplicativo local Windows:** migrar IndexedDB para SQLite/local storage Tauri com migração sem perda; migrar acesso a arquivos para permissões nativas mínimas; manter compatibilidade com os dados existentes.
+2. **Agendador local confiável:** fila durável, execução no horário, retomada após reinicialização, logs e alertas. Deixar claro que o computador precisa estar ligado, conectado e com o XFLUX executando. Não prometer execução com o PC desligado.
+3. **Conexões oficiais por rede:** implementar OAuth/PKCE no cliente quando a plataforma permitir; usar serviço técnico mínimo somente quando callback/segredo confidencial exigir. O serviço não recebe a biblioteca inteira.
+4. **Primeira publicação real:** escolher uma API oficialmente disponível, validar permissões e formato, testar com conta própria e obter confirmação da plataforma.
+5. **Demais redes:** integrar individualmente, respeitando auditoria, revisão e limitações. Shopee Video permanece assistida até haver API pública/parceiro comprovado.
+6. **Empacotamento e distribuição:** testar instalação, atualização, backup/restauração e funcionamento no Windows 10/11; publicar instalador somente após CI verde e teste manual.
 
-## Pendências
-Servidor e workers; upload de mídia para a nuvem; envio por API por rede; confirmação da plataforma; notificações por e-mail; login de usuário no servidor; migração para SQLite/Tauri; validação de duração/proporção do vídeo antes de publicar (a Biblioteca ainda não guarda essas informações).
+## Dependências externas que não podem ser simuladas
+- Aplicativos OAuth e credenciais criados nos painéis oficiais.
+- Aprovação/revisão de permissões por plataforma, quando exigida.
+- Domínio HTTPS e serviço de callback apenas para as redes que exigirem backend.
+- Contas de teste reais e consentimento do proprietário.
+Essas aprovações e credenciais não podem ser fabricadas pelo código ou pelo mantenedor do repositório.
 
-## Relatório de testes
-Não houve internet no ambiente: **`npm install` e `npm run build` (Vite) não foram executados**. Rode-os no seu computador.
-Executado aqui:
-- `tsc --strict` (TypeScript 6.0.3, tipos substitutos do React): 0 erros.
-- Testes unitários em Node: **38** da Fase 5 (classificação de erros, novas tentativas, expiração, estados de conexão, rotas e bloqueios, fila, pacote por rede, validação do contrato, endereço do servidor HTTPS, catálogo, ausência de segredos e de campos de senha), mais 45 da Fase 4. Traduções: **816 chaves** idênticas em pt/en/es, sem vazias, mesmos marcadores.
-- Teste de ponta a ponta no Chromium (React 19): **45** verificações da Fase 4 (regressão, sem falhas) e **38** da Fase 5: central de integrações sem e com servidor, URL inválida, 401, estados de conta vindos do servidor, Reconectar/Conectar/Desconectar, OAuth mostrando o domínio de destino, servidor fora do ar e resposta incompatível, fila (painel de status, filtros, alerta no menu), publicação assistida com histórico de tentativas, falha com nova tentativa, confirmação do usuário registrando uso do vídeo e da legenda, bloqueios de TikTok e Shopee, idiomas pt/en/es.
-- **O servidor usado nesses testes é um servidor falso, só de teste** (`tests`, fora do produto), para exercitar o cliente do contrato. Ele não representa nenhuma rede real.
-- **Não testado**: qualquer chamada real a Instagram, Facebook, TikTok, Pinterest, YouTube ou Shopee; OAuth real; Windows 10; Edge; Tauri.
+## Não é requisito geral do produto
+- Hospedagem central de vídeos.
+- Upload de toda a biblioteca para o XFLUX.
+- Login XFLUX obrigatório para usar funções locais.
+- Agendador em nuvem para o funcionamento normal no PC.
+- IA paga ou assinatura de um provedor de IA.
+
+## Testes e estado de validação
+Os testes históricos descritos nas fases anteriores não equivalem a testes reais de OAuth/publicação. No momento desta atualização, não há comprovação de build do instalador Windows nesta revisão, migração Tauri/SQLite, execução em background, conexão real com redes ou publicação automática. A CI deve ser executada e os resultados registrados antes de chamar a versão de pronta.
