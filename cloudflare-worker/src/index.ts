@@ -177,11 +177,13 @@ export default {
       if (url.pathname === "/oauth/meta/result" && request.method === "GET") {
         const deviceId = await authenticate(request, env);
         if (!deviceId) return cors(json({ error: "unauthorized" }, 401));
-        // DELETE ... RETURNING garante que a credencial temporária só possa ser retirada uma vez.
-        const row = await env.DB.prepare(`DELETE FROM oauth_results WHERE device_id = ?
-          RETURNING encrypted_token, token_type, token_expires_at, delivery_expires_at`)
+        const row = await env.DB.prepare("SELECT encrypted_token, token_type, token_expires_at, delivery_expires_at FROM oauth_results WHERE device_id = ?")
           .bind(deviceId).first<{encrypted_token:string;token_type:string|null;token_expires_at:number|null;delivery_expires_at:number}>();
         if (!row) return cors(json({ pending: true }));
+        // A exclusão condicional faz a entrega ser consumida uma única vez, inclusive com duas janelas abertas.
+        const consumed = await env.DB.prepare("DELETE FROM oauth_results WHERE device_id = ? AND encrypted_token = ?")
+          .bind(deviceId, row.encrypted_token).run();
+        if (consumed.meta.changes !== 1) return cors(json({ pending: true }));
         const now = Math.floor(Date.now() / 1000);
         if (row.delivery_expires_at < now) return cors(json({ pending: false, error: "delivery_expired" }, 410));
         if (row.token_type?.startsWith("error:")) return cors(json({ pending: false, error: row.token_type.slice(6) }));
