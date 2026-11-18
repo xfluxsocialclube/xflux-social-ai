@@ -34,6 +34,17 @@ async function encryptToken(token: string, env: Env) {
   return `${b64(iv)}.${b64(new Uint8Array(cipher))}`;
 }
 
+async function decryptToken(value: string, env: Env) {
+  const [ivPart, cipherPart] = value.split(".");
+  if (!ivPart || !cipherPart) throw new Error("Encrypted token format is invalid");
+  const plain = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: fromB64(ivPart) },
+    await encryptionKey(env),
+    fromB64(cipherPart),
+  );
+  return new TextDecoder().decode(plain);
+}
+
 async function authenticate(request: Request, env: Env) {
   const deviceId = request.headers.get("x-xflux-device");
   const secret = request.headers.get("x-xflux-device-secret");
@@ -52,13 +63,19 @@ function cors(response: Response) {
   return new Response(response.body, { status: response.status, headers });
 }
 
+const callbackPage = (heading: string, message: string, status = 200) =>
+  new Response(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>XFLUX Social AI</title><body style="font:16px system-ui;max-width:560px;margin:12vh auto;padding:24px;color:#172033"><h2>${heading}</h2><p>${message}</p></body></html>`, {
+    status,
+    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+  });
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
     const url = new URL(request.url);
     try {
       if (url.pathname === "/health" && request.method === "GET") {
-        return cors(json({ ok: true, service: "xflux-meta-auth", version: 1 }));
+        return cors(json({ ok: true, service: "xflux-meta-auth", version: 2 }));
       }
 
       if (url.pathname === "/device/register" && request.method === "POST") {
@@ -89,13 +106,13 @@ export default {
         const code = url.searchParams.get("code");
         const state = url.searchParams.get("state");
         const providerError = url.searchParams.get("error_description") || url.searchParams.get("error");
-        if (providerError) return new Response("A autorização foi cancelada ou recusada. Volte ao XFLUX.", { status: 400 });
-        if (!code || !state) return new Response("Resposta OAuth incompleta.", { status: 400 });
+        if (providerError) return callbackPage("Autorização não concluída", "A Meta recusou ou cancelou a autorização. Volte ao XFLUX e tente novamente.", 400);
+        if (!code || !state) return callbackPage("Resposta incompleta", "Não recebemos todos os dados necessários da Meta. Volte ao XFLUX e tente novamente.", 400);
         const now = Math.floor(Date.now() / 1000);
         const saved = await env.DB.prepare("SELECT device_id, expires_at FROM oauth_states WHERE state = ?")
           .bind(state).first<{device_id:string;expires_at:number}>();
         await env.DB.prepare("DELETE FROM oauth_states WHERE state = ?").bind(state).run();
-        if (!saved || saved.expires_at < now) return new Response("Solicitação de login expirada. Volte ao XFLUX e tente novamente.", { status: 400 });
+        if (!saved || saved.expires_at < now) return callbackPage("Solicitação expirada", "Volte ao XFLUX e inicie a conexão novamente.", 400);
 
         const tokenUrl = new URL(`https://graph.facebook.com/${env.META_GRAPH_VERSION || "v27.0"}/oauth/access_token`);
         tokenUrl.searchParams.set("client_id", env.META_APP_ID);
@@ -105,18 +122,37 @@ export default {
         const tokenResponse = await fetch(tokenUrl.toString(), { method: "GET" });
         const tokenData = await tokenResponse.json() as {access_token?:string;token_type?:string;expires_in?:number;error?:{message?:string}};
         if (!tokenResponse.ok || !tokenData.access_token) {
-          return new Response("A Meta não confirmou a autorização. Volte ao XFLUX e tente novamente.", { status: 502 });
+          return callbackPage("A Meta não confirmou a autorização", "Volte ao XFLUX e tente novamente. Nenhuma conta foi marcada como conectada.", 502);
         }
+
+        // O token fica somente em uma caixa de entrega criptografada e temporária.
+        // O aplicativo o retira uma única vez e o salva no cofre seguro do Windows.
+        await env.DB.prepare(`CREATE TABLE IF NOT EXISTS oauth_results (
+          device_id TEXT PRIMARY KEY,
+          encrypted_token TEXT NOT NULL,
+          token_type TEXT,
+          token_expires_at INTEGER,
+          delivery_expires_at INTEGER NOT NULL
+        )`).run();
         const encrypted = await encryptToken(tokenData.access_token, env);
-        await env.DB.prepare(`INSERT INTO social_tokens (device_id, platform, encrypted_token, token_type, expires_at, updated_at)
-          VALUES (?, 'meta', ?, ?, ?, ?)
-          ON CONFLICT(device_id, platform) DO UPDATE SET encrypted_token=excluded.encrypted_token,
-          token_type=excluded.token_type, expires_at=excluded.expires_at, updated_at=excluded.updated_at`)
+        await env.DB.prepare("INSERT OR REPLACE INTO oauth_results (device_id, encrypted_token, token_type, token_expires_at, delivery_expires_at) VALUES (?, ?, ?, ?, ?)")
           .bind(saved.device_id, encrypted, tokenData.token_type || "bearer",
-            tokenData.expires_in ? now + tokenData.expires_in : null, now).run();
-        return new Response("<!doctype html><html lang='pt-BR'><meta charset='utf-8'><title>XFLUX conectado</title><body style='font:16px system-ui;max-width:560px;margin:12vh auto;padding:24px;color:#172033'><h2>Autorização concluída</h2><p>O acesso foi protegido e registrado. Você já pode fechar esta janela e voltar ao XFLUX.</p></body></html>", {
-          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
-        });
+            tokenData.expires_in ? now + tokenData.expires_in : null, now + 300).run();
+        return callbackPage("Autorização concluída", "Volte ao XFLUX. O aplicativo está finalizando a conexão e guardará a credencial no cofre seguro deste computador.");
+      }
+
+      if (url.pathname === "/oauth/meta/result" && request.method === "GET") {
+        const deviceId = await authenticate(request, env);
+        if (!deviceId) return cors(json({ error: "unauthorized" }, 401));
+        // DELETE ... RETURNING garante que a credencial temporária só possa ser retirada uma vez.
+        const row = await env.DB.prepare(`DELETE FROM oauth_results WHERE device_id = ?
+          RETURNING encrypted_token, token_type, token_expires_at, delivery_expires_at`)
+          .bind(deviceId).first<{encrypted_token:string;token_type:string|null;token_expires_at:number|null;delivery_expires_at:number}>();
+        if (!row) return cors(json({ pending: true }));
+        const now = Math.floor(Date.now() / 1000);
+        if (row.delivery_expires_at < now) return cors(json({ pending: false, error: "delivery_expired" }, 410));
+        const accessToken = await decryptToken(row.encrypted_token, env);
+        return cors(json({ pending: false, accessToken, tokenType: row.token_type || "bearer", expiresAt: row.token_expires_at }));
       }
 
       if (url.pathname === "/oauth/meta/status" && request.method === "GET") {
