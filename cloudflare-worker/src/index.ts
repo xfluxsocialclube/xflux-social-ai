@@ -102,6 +102,13 @@ export default {
       if (url.pathname === "/oauth/meta/start" && request.method === "POST") {
         const deviceId = await authenticate(request, env);
         if (!deviceId) return cors(json({ error: "unauthorized" }, 401));
+        await env.DB.prepare(`CREATE TABLE IF NOT EXISTS oauth_results (
+          device_id TEXT PRIMARY KEY,
+          encrypted_token TEXT NOT NULL,
+          token_type TEXT,
+          token_expires_at INTEGER,
+          delivery_expires_at INTEGER NOT NULL
+        )`).run();
         const state = b64(crypto.getRandomValues(new Uint8Array(32)));
         const now = Math.floor(Date.now() / 1000);
         await env.DB.prepare("INSERT INTO oauth_states (state, device_id, expires_at) VALUES (?, ?, ?)")
