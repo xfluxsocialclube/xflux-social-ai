@@ -121,6 +121,9 @@ export async function connectMetaAuthorization(onStatus?: (message: string) => v
     await wait(2000);
     const result = await jsonRequest<OAuthResult>('/oauth/meta/result', { method: 'GET' }, session);
     if (result.pending) continue;
+    if (result.error === 'authorization_cancelled') throw new Error('Você cancelou ou recusou a autorização na Meta.');
+    if (result.error === 'token_exchange_failed') throw new Error('A Meta não confirmou a autorização. Confira a configuração do aplicativo e tente novamente.');
+    if (result.error) throw new Error('A Meta não concluiu a autorização. Volte ao XFLUX e tente novamente.');
     if (!result.accessToken) throw new Error('A Meta não entregou uma credencial válida. Tente novamente.');
     const token: MetaToken = {
       accessToken: result.accessToken,
