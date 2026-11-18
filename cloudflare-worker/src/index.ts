@@ -69,6 +69,11 @@ const callbackPage = (heading: string, message: string, status = 200) =>
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
   });
 
+async function saveOAuthError(deviceId: string, code: string, now: number, env: Env) {
+  await env.DB.prepare("INSERT OR REPLACE INTO oauth_results (device_id, encrypted_token, token_type, token_expires_at, delivery_expires_at) VALUES (?, '', ?, NULL, ?)")
+    .bind(deviceId, `error:${code}`, now + 300).run();
+}
+
 export default {
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
     await env.DB.prepare(`CREATE TABLE IF NOT EXISTS oauth_results (
@@ -126,13 +131,20 @@ export default {
         const code = url.searchParams.get("code");
         const state = url.searchParams.get("state");
         const providerError = url.searchParams.get("error_description") || url.searchParams.get("error");
-        if (providerError) return callbackPage("Autorização não concluída", "A Meta recusou ou cancelou a autorização. Volte ao XFLUX e tente novamente.", 400);
-        if (!code || !state) return callbackPage("Resposta incompleta", "Não recebemos todos os dados necessários da Meta. Volte ao XFLUX e tente novamente.", 400);
+        if (!state) return callbackPage("Resposta incompleta", "Não recebemos o identificador desta solicitação. Volte ao XFLUX e tente novamente.", 400);
         const now = Math.floor(Date.now() / 1000);
         const saved = await env.DB.prepare("SELECT device_id, expires_at FROM oauth_states WHERE state = ?")
           .bind(state).first<{device_id:string;expires_at:number}>();
         await env.DB.prepare("DELETE FROM oauth_states WHERE state = ?").bind(state).run();
         if (!saved || saved.expires_at < now) return callbackPage("Solicitação expirada", "Volte ao XFLUX e inicie a conexão novamente.", 400);
+        if (providerError) {
+          await saveOAuthError(saved.device_id, "authorization_cancelled", now, env);
+          return callbackPage("Autorização não concluída", "A Meta recusou ou cancelou a autorização. Volte ao XFLUX para tentar novamente.", 400);
+        }
+        if (!code) {
+          await saveOAuthError(saved.device_id, "incomplete_response", now, env);
+          return callbackPage("Resposta incompleta", "Não recebemos o código de autorização da Meta. Volte ao XFLUX e tente novamente.", 400);
+        }
 
         const tokenUrl = new URL(`https://graph.facebook.com/${env.META_GRAPH_VERSION || "v27.0"}/oauth/access_token`);
         tokenUrl.searchParams.set("client_id", env.META_APP_ID);
@@ -142,6 +154,7 @@ export default {
         const tokenResponse = await fetch(tokenUrl.toString(), { method: "GET" });
         const tokenData = await tokenResponse.json() as {access_token?:string;token_type?:string;expires_in?:number;error?:{message?:string}};
         if (!tokenResponse.ok || !tokenData.access_token) {
+          await saveOAuthError(saved.device_id, "token_exchange_failed", now, env);
           return callbackPage("A Meta não confirmou a autorização", "Volte ao XFLUX e tente novamente. Nenhuma conta foi marcada como conectada.", 502);
         }
 
@@ -171,6 +184,7 @@ export default {
         if (!row) return cors(json({ pending: true }));
         const now = Math.floor(Date.now() / 1000);
         if (row.delivery_expires_at < now) return cors(json({ pending: false, error: "delivery_expired" }, 410));
+        if (row.token_type?.startsWith("error:")) return cors(json({ pending: false, error: row.token_type.slice(6) }));
         const accessToken = await decryptToken(row.encrypted_token, env);
         return cors(json({ pending: false, accessToken, tokenType: row.token_type || "bearer", expiresAt: row.token_expires_at }));
       }
