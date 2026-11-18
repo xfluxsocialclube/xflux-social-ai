@@ -134,8 +134,8 @@ fn local_kv_set(app: AppHandle, key: String, value: Value) -> Result<(), String>
 }
 
 #[tauri::command]
-fn local_kv_get(app: &AppHandle, key: String) -> Result<Option<Value>, String> {
-    let conn = open_database(app)?;
+fn local_kv_get(app: AppHandle, key: String) -> Result<Option<Value>, String> {
+    let conn = open_database(&app)?;
     let raw: Option<String> = conn.query_row("SELECT payload FROM kv WHERE key=?1", params![key], |row| row.get(0)).optional().map_err(|e| e.to_string())?;
     raw.map(|s| serde_json::from_str(&s).map_err(|e| e.to_string())).transpose()
 }
