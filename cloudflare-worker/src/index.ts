@@ -70,6 +70,19 @@ const callbackPage = (heading: string, message: string, status = 200) =>
   });
 
 export default {
+  async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+    await env.DB.prepare(`CREATE TABLE IF NOT EXISTS oauth_results (
+      device_id TEXT PRIMARY KEY,
+      encrypted_token TEXT NOT NULL,
+      token_type TEXT,
+      token_expires_at INTEGER,
+      delivery_expires_at INTEGER NOT NULL
+    )`).run();
+    const now = Math.floor(Date.now() / 1000);
+    await env.DB.prepare("DELETE FROM oauth_results WHERE delivery_expires_at < ?").bind(now).run();
+    await env.DB.prepare("DELETE FROM oauth_states WHERE expires_at < ?").bind(now).run();
+  },
+
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
     const url = new URL(request.url);
