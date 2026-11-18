@@ -32,19 +32,18 @@ interface OAuthResult {
 }
 
 async function jsonRequest<T>(path: string, init: RequestInit = {}, session?: DeviceSession): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set('Accept', 'application/json');
+  if (init.body) headers.set('Content-Type', 'application/json');
+  if (session) {
+    headers.set('x-xflux-device', session.deviceId);
+    headers.set('x-xflux-device-secret', session.deviceSecret);
+  }
   const response = await fetch(`${WORKER_URL}${path}`, {
     ...init,
     credentials: 'omit',
     cache: 'no-store',
-    headers: {
-      Accept: 'application/json',
-      ...(init.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(session ? {
-        'x-xflux-device': session.deviceId,
-        'x-xflux-device-secret': session.deviceSecret,
-      } : {}),
-      ...init.headers,
-    },
+    headers,
   });
   if (!response.ok) {
     if (response.status === 410) throw new Error('A autorização demorou demais. Volte ao XFLUX e tente novamente.');
