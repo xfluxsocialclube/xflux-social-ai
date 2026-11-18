@@ -134,8 +134,8 @@ fn local_kv_set(app: AppHandle, key: String, value: Value) -> Result<(), String>
 }
 
 #[tauri::command]
-fn local_kv_get(app: AppHandle, key: String) -> Result<Option<Value>, String> {
-    let conn = open_database(&app)?;
+fn local_kv_get(app: &AppHandle, key: String) -> Result<Option<Value>, String> {
+    let conn = open_database(app)?;
     let raw: Option<String> = conn.query_row("SELECT payload FROM kv WHERE key=?1", params![key], |row| row.get(0)).optional().map_err(|e| e.to_string())?;
     raw.map(|s| serde_json::from_str(&s).map_err(|e| e.to_string())).transpose()
 }
@@ -166,6 +166,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_persisted_scope::init())
+        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             local_db_init, local_db_import_legacy, local_db_get_all, local_db_put,
             local_db_put_many, local_db_delete, local_db_delete_many, local_kv_set, local_kv_get,
