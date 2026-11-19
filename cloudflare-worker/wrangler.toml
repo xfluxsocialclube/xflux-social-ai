@@ -15,3 +15,5 @@ crons = ["*/5 * * * *"]
 
 # Preview configuration is deliberately separate from Production.
 [previews]
+
+# Trigger a fresh Preview build after updating its Cloudflare build settings.
