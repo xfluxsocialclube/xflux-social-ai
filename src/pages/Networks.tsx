@@ -93,6 +93,18 @@ export function Networks() {
       {metaState === 'saved' && <Notice>A autorização Meta está salva no cofre seguro do Windows. Instagram e Facebook ainda não serão apresentados como contas verificadas até consultarmos os dados oficiais da Meta.</Notice>}
       {metaState === 'expired' && <Notice tone="warn">A autorização Meta salva neste computador expirou. Faça a conexão novamente.</Notice>}
 
+      <div className="card" style={{ alignItems: 'stretch', textAlign: 'left' }}>
+        <strong>Conta Meta — Facebook + Instagram</strong>
+        <small className="muted">Uma única autorização oficial para disponibilizar os ativos do Facebook e do Instagram que sua conta tiver permissão para acessar.</small>
+        <div className="toolbar">
+          <button className="btn small" disabled={metaBusy} onClick={() => void connectMeta()}>
+            {metaBusy ? 'Aguardando autorização...' : metaState === 'saved' ? 'Refazer autorização Meta' : 'Conectar Facebook + Instagram'}
+          </button>
+          {metaBusy && <button className="btn ghost small" onClick={cancelMeta}>Cancelar</button>}
+          {metaBusy && metaUrl && <button className="btn ghost small" onClick={() => void copyMetaLink()}>Copiar link de autorização</button>}
+          {metaState !== 'none' && <button className="btn ghost small" disabled={metaBusy} onClick={() => void disconnectMeta()}>Desconectar Meta</button>}
+        </div>
+      </div>
       <div className="grid nets">
         {ADAPTERS.map((n) => {
           const facts = getFacts(n.id);
@@ -116,15 +128,9 @@ export function Networks() {
               <span className="pill">{t('pub.route.assisted')}</span>
               {route.blockers[0] && <small className="muted">{t('pub.route.missing')}: {t(`pub.blk.${route.blockers[0]}` as TranslationKey)}</small>}
               <div className="toolbar">
-                {usesMeta && <button className="btn small" disabled={metaBusy} onClick={() => void connectMeta()}>
-                  {metaBusy ? 'Aguardando...' : metaState === 'saved' ? 'Refazer autorização Meta' : 'Conectar Meta'}
-                </button>}
-                {usesMeta && metaBusy && <button className="btn ghost small" onClick={cancelMeta}>Cancelar</button>}
-                {usesMeta && metaBusy && metaUrl && <button className="btn ghost small" onClick={() => void copyMetaLink()}>Copiar link de autorização</button>}
-                {usesMeta && metaState !== 'none' && <button className="btn ghost small" disabled={metaBusy} onClick={() => void disconnectMeta()}>Desconectar</button>}
                 <button className="btn ghost small" onClick={() => setOpen(open === n.id ? null : n.id)}>{open === n.id ? t('pub.hide') : t('pub.details')}</button>
               </div>
-              {usesMeta && <small className="muted">A autorização é compartilhada entre os fluxos Instagram/Facebook da Meta. A conta específica ainda será identificada na próxima etapa.</small>}
+              {usesMeta && <small className="muted">Este serviço usa a autorização única da Meta exibida acima. A conta e as permissões específicas ainda serão identificadas pela consulta oficial à Meta.</small>}
               <label className="switch-row"><input type="checkbox" checked={chosen.includes(n.id)} onChange={() => toggle(n.id)} /><span>{t('net.usePlan')}</span></label>
               {open === n.id && facts && <div className="stack" style={{ gap: '.4rem' }}>
                 <strong>{t('pub.route.missing')}</strong>
