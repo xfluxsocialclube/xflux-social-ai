@@ -116,8 +116,8 @@ export async function connectMetaAuthorization(onStatus?: (message: string) => v
   await openUrl(authorization.toString());
   onStatus?.('Aguardando você concluir a autorização no navegador...');
 
-  // A resposta OAuth fica disponível por até cinco minutos e só pode ser retirada uma vez.
-  for (let attempt = 0; attempt < 150; attempt += 1) {
+  // A resposta OAuth fica disponível por até dez minutos e só pode ser retirada uma vez.
+  for (let attempt = 0; attempt < 300; attempt += 1) {
     await wait(2000);
     const result = await jsonRequest<OAuthResult>('/oauth/meta/result', { method: 'GET' }, session);
     if (result.pending) continue;
