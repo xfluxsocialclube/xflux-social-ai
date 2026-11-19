@@ -71,7 +71,7 @@ const callbackPage = (heading: string, message: string, status = 200) =>
 
 async function saveOAuthError(deviceId: string, code: string, now: number, env: Env) {
   await env.DB.prepare("INSERT OR REPLACE INTO oauth_results (device_id, encrypted_token, token_type, token_expires_at, delivery_expires_at) VALUES (?, '', ?, NULL, ?)")
-    .bind(deviceId, `error:${code}`, now + 300).run();
+    .bind(deviceId, `error:${code}`, now + 600).run();
 }
 
 export default {
@@ -180,7 +180,7 @@ export default {
         const encrypted = await encryptToken(tokenData.access_token, env);
         await env.DB.prepare("INSERT OR REPLACE INTO oauth_results (device_id, encrypted_token, token_type, token_expires_at, delivery_expires_at) VALUES (?, ?, ?, ?, ?)")
           .bind(saved.device_id, encrypted, tokenData.token_type || "bearer",
-            tokenData.expires_in ? now + tokenData.expires_in : null, now + 300).run();
+            tokenData.expires_in ? now + tokenData.expires_in : null, now + 600).run();
         return callbackPage("Autorização concluída", "Volte ao XFLUX. O aplicativo está finalizando a conexão e guardará a credencial no cofre seguro deste computador.");
       }
 
