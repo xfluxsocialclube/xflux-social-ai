@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissões do XFLUX para abrir pastas e gerenciar a biblioteca local escolhida pelo usuário",
+  "description": "Permissões do XFLUX para abrir pastas, gerenciar a biblioteca local e abrir o login oficial da Meta",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -11,6 +11,7 @@
     "fs:allow-write-file",
     "fs:allow-mkdir",
     "fs:allow-remove",
-    "fs:allow-exists"
+    "fs:allow-exists",
+    "opener:default"
   ]
 }

@@ -166,6 +166,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_persisted_scope::init())
+        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             local_db_init, local_db_import_legacy, local_db_get_all, local_db_put,
             local_db_put_many, local_db_delete, local_db_delete_many, local_kv_set, local_kv_get,

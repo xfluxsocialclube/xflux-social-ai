@@ -1,0 +1,25 @@
+name = "xflux-social-ai"
+main = "src/index.ts"
+compatibility_date = "2026-11-15"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "xflux-meta-auth"
+database_id = "11d4d42e-ab1d-4864-82c3-4d3975f672a2"
+
+[vars]
+META_GRAPH_VERSION = "v27.0"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Preview configuration is deliberately separate from Production.
+[previews]
+
+[[previews.d1_databases]]
+binding = "DB"
+database_name = "xflux-meta-auth-preview"
+database_id = "b92087ce-990a-438c-b788-cc7d57dd66d6"
+
+[previews.vars]
+META_GRAPH_VERSION = "v27.0"
