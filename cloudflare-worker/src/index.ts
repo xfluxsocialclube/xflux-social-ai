@@ -128,10 +128,16 @@ export default {
         const now = Math.floor(Date.now() / 1000);
         await env.DB.prepare("INSERT INTO oauth_states (state, device_id, expires_at) VALUES (?, ?, ?)")
           .bind(state, deviceId, now + 600).run();
+        const appId = (env.META_APP_ID || "").trim();
+        const configId = (env.META_CONFIG_ID || "").trim();
+        const redirectUri = (env.META_REDIRECT_URI || "").trim();
+        if (!/^\d{8,20}$/.test(appId) || !/^\d+$/.test(configId) || !redirectUri.startsWith("https://")) {
+          return cors(json({ error: "meta_not_configured" }, 503));
+        }
         const auth = new URL(`https://www.facebook.com/${env.META_GRAPH_VERSION || "v27.0"}/dialog/oauth`);
-        auth.searchParams.set("client_id", env.META_APP_ID);
-        auth.searchParams.set("config_id", env.META_CONFIG_ID);
-        auth.searchParams.set("redirect_uri", env.META_REDIRECT_URI);
+        auth.searchParams.set("client_id", appId);
+        auth.searchParams.set("config_id", configId);
+        auth.searchParams.set("redirect_uri", redirectUri);
         auth.searchParams.set("response_type", "code");
         auth.searchParams.set("state", state);
         return cors(json({ authorizationUrl: auth.toString() }));
@@ -157,9 +163,9 @@ export default {
         }
 
         const tokenUrl = new URL(`https://graph.facebook.com/${env.META_GRAPH_VERSION || "v27.0"}/oauth/access_token`);
-        tokenUrl.searchParams.set("client_id", env.META_APP_ID);
-        tokenUrl.searchParams.set("client_secret", env.META_APP_SECRET);
-        tokenUrl.searchParams.set("redirect_uri", env.META_REDIRECT_URI);
+        tokenUrl.searchParams.set("client_id", (env.META_APP_ID || "").trim());
+        tokenUrl.searchParams.set("client_secret", (env.META_APP_SECRET || "").trim());
+        tokenUrl.searchParams.set("redirect_uri", (env.META_REDIRECT_URI || "").trim());
         tokenUrl.searchParams.set("code", code);
         const tokenResponse = await fetch(tokenUrl.toString(), { method: "GET" });
         const tokenData = await tokenResponse.json() as {access_token?:string;token_type?:string;expires_in?:number;error?:{message?:string}};

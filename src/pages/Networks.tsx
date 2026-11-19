@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Notice } from '../components/Notice';
 import { useI18n } from '../i18n/I18nContext';
 import type { TranslationKey } from '../i18n/pt';
@@ -10,6 +10,7 @@ import {
   connectMetaAuthorization,
   disconnectMetaAuthorization,
   getMetaAuthorizationState,
+  MetaCancelled,
   type MetaAuthorizationState,
 } from '../services/oauth/meta';
 
@@ -21,6 +22,8 @@ export function Networks() {
   const [metaBusy, setMetaBusy] = useState(false);
   const [metaMessage, setMetaMessage] = useState<string | null>(null);
   const [metaError, setMetaError] = useState<string | null>(null);
+  const [metaUrl, setMetaUrl] = useState<string | null>(null);
+  const metaAbort = useRef<AbortController | null>(null);
 
   const refreshMeta = useCallback(async () => {
     try { setMetaState(await getMetaAuthorizationState()); }
@@ -28,6 +31,8 @@ export function Networks() {
   }, []);
 
   useEffect(() => { void refreshMeta(); }, [refreshMeta]);
+  // Sair da tela cancela a espera da autorização, para o botão nunca ficar preso.
+  useEffect(() => () => { metaAbort.current?.abort(); }, []);
 
   const toggle = (id: string) => {
     const next = chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id];
@@ -35,15 +40,36 @@ export function Networks() {
   };
 
   const connectMeta = async () => {
-    setMetaBusy(true); setMetaError(null); setMetaMessage('Preparando a conexão segura...');
+    if (metaBusy) return;
+    const ctrl = new AbortController();
+    metaAbort.current = ctrl;
+    setMetaBusy(true); setMetaError(null); setMetaUrl(null); setMetaMessage('Preparando a conexão segura...');
     try {
-      await connectMetaAuthorization(setMetaMessage);
+      await connectMetaAuthorization(setMetaMessage, { signal: ctrl.signal, onAuthorizationUrl: setMetaUrl });
       await refreshMeta();
       setMetaMessage('Autorização Meta salva no cofre seguro do Windows. A identificação das contas e as permissões ainda serão verificadas.');
     } catch (error) {
-      setMetaError(error instanceof Error ? error.message : 'Não foi possível conectar à Meta.');
-      setMetaMessage(null);
-    } finally { setMetaBusy(false); }
+      if (error instanceof MetaCancelled) {
+        setMetaMessage('Conexão cancelada. Você pode tentar de novo.');
+      } else {
+        setMetaError(error instanceof Error ? error.message : 'Não foi possível conectar à Meta.');
+        setMetaMessage(null);
+      }
+    } finally {
+      if (metaAbort.current === ctrl) { metaAbort.current = null; setMetaBusy(false); setMetaUrl(null); }
+    }
+  };
+
+  const cancelMeta = () => metaAbort.current?.abort();
+
+  const copyMetaLink = async () => {
+    if (!metaUrl) return;
+    try {
+      await navigator.clipboard.writeText(metaUrl);
+      setMetaMessage('Link copiado. Cole no navegador que você usa e conclua a autorização.');
+    } catch {
+      setMetaError('Não foi possível copiar o link.');
+    }
   };
 
   const disconnectMeta = async () => {
@@ -93,6 +119,8 @@ export function Networks() {
                 {usesMeta && <button className="btn small" disabled={metaBusy} onClick={() => void connectMeta()}>
                   {metaBusy ? 'Aguardando...' : metaState === 'saved' ? 'Refazer autorização Meta' : 'Conectar Meta'}
                 </button>}
+                {usesMeta && metaBusy && <button className="btn ghost small" onClick={cancelMeta}>Cancelar</button>}
+                {usesMeta && metaBusy && metaUrl && <button className="btn ghost small" onClick={() => void copyMetaLink()}>Copiar link de autorização</button>}
                 {usesMeta && metaState !== 'none' && <button className="btn ghost small" disabled={metaBusy} onClick={() => void disconnectMeta()}>Desconectar</button>}
                 <button className="btn ghost small" onClick={() => setOpen(open === n.id ? null : n.id)}>{open === n.id ? t('pub.hide') : t('pub.details')}</button>
               </div>
