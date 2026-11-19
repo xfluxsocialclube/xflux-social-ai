@@ -92,6 +92,16 @@ export default {
     if (request.method === "OPTIONS") return cors(new Response(null, { status: 204 }));
     const url = new URL(request.url);
     try {
+      if (url.pathname === "/" && request.method === "GET") {
+        return cors(json({
+          ok: true,
+          service: "xflux-meta-auth",
+          message: "XFLUX Social AI - serviço de autorização Meta ativo",
+          health: "/health",
+          endpoints: ["/health", "/device/register", "/oauth/meta/start", "/oauth/meta/callback", "/oauth/meta/result", "/oauth/meta/status"],
+        }));
+      }
+
       if (url.pathname === "/health" && request.method === "GET") {
         return cors(json({ ok: true, service: "xflux-meta-auth", version: 2 }));
       }
