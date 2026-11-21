@@ -11,6 +11,7 @@ import { buildDrafts } from '../../services/captions/importer';
 import { addCaptions, listCaptions } from '../../services/captions/store';
 import { CAPTION_FIELDS, type CaptionField, type ColumnMapping, type ImportResult } from '../../services/captions/types';
 import { openXlsx, type XlsxBook } from '../../services/captions/xlsx';
+import { ExistingBatchPanel } from './ExistingBatchPanel';
 
 const MAX_BYTES = 10 * 1024 * 1024; const MAX_ROWS = 20000;
 type Step = 'pick' | 'map' | 'review' | 'done';
@@ -35,6 +36,7 @@ export function ImportDialog({ onClose, onImported }: { onClose: () => void; onI
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imported, setImported] = useState(0);
+  const [existingOpen, setExistingOpen] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
   const setData = (data: string[][]) => {
@@ -103,11 +105,15 @@ export function ImportDialog({ onClose, onImported }: { onClose: () => void; onI
       <div className="stack">
         {error && <Notice tone="warn">{error}</Notice>}
 
-        {step === 'pick' && (<>
+        {step === 'pick' && (existingOpen ? (
+          <ExistingBatchPanel onClose={() => setExistingOpen(false)} onSaved={onImported} />
+        ) : <>
           <h2>{t('cb.imp.step1')}</h2>
           <p className="muted">{t('cb.imp.help')}</p>
           <input ref={input} type="file" accept=".xlsx,.xlsm,.csv,.tsv,.txt" onChange={(e) => onFile(e.target.files)} disabled={busy} />
           {busy && <small className="muted">{t('cb.imp.reading')}</small>}
+          <div className="divider" />
+          <button className="btn ghost" type="button" onClick={() => setExistingOpen(true)}>{t('cb.existing.open')}</button>
         </>)}
 
         {step === 'map' && mapping && (<>

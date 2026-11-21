@@ -1,0 +1,28 @@
+services:
+  xflux-backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    image: xflux-backend:local
+    env_file:
+      - .env
+    environment:
+      XFLUX_ENV: production
+      XFLUX_DATABASE_PATH: /data/xflux.sqlite3
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - xflux-data:/data
+    restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/v1/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  xflux-data:
