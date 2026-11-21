@@ -152,10 +152,33 @@ export default {
         tokenUrl.searchParams.set("redirect_uri", env.META_REDIRECT_URI);
         tokenUrl.searchParams.set("code", code);
         const tokenResponse = await fetch(tokenUrl.toString(), { method: "GET" });
-        const tokenData = await tokenResponse.json() as {access_token?:string;token_type?:string;expires_in?:number;error?:{message?:string}};
-        if (!tokenResponse.ok || !tokenData.access_token) {
+        let tokenData: {
+          access_token?: string;
+          token_type?: string;
+          expires_in?: number;
+          error?: { type?: string; code?: number; error_subcode?: number; fbtrace_id?: string };
+        };
+        try {
+          tokenData = await tokenResponse.json() as typeof tokenData;
+        } catch {
+          console.warn("Meta OAuth token exchange returned invalid JSON", {
+            http_status: tokenResponse.status,
+          });
           await saveOAuthError(saved.device_id, "token_exchange_failed", now, env);
-          return callbackPage("A Meta não confirmou a autorização", "Volte ao XFLUX e tente novamente. Nenhuma conta foi marcada como conectada.", 502);
+          return callbackPage("A Meta não confirmou a autorização", "A resposta da Meta veio em formato inesperado. Volte ao XFLUX e tente novamente.", 502);
+        }
+        if (!tokenResponse.ok || !tokenData.access_token) {
+          // Registra somente identificadores técnicos seguros. Nunca registrar code,
+          // access_token, client_secret, URL completa ou corpo bruto da resposta.
+          console.warn("Meta OAuth token exchange failed", {
+            http_status: tokenResponse.status,
+            error_type: tokenData.error?.type,
+            error_code: tokenData.error?.code,
+            error_subcode: tokenData.error?.error_subcode,
+            fbtrace_id: tokenData.error?.fbtrace_id,
+          });
+          await saveOAuthError(saved.device_id, "token_exchange_failed", now, env);
+          return callbackPage("A Meta não confirmou a autorização", "A Meta recusou a troca do código de autorização. Volte ao XFLUX e tente novamente.", 502);
         }
 
         // O token fica somente em uma caixa de entrega criptografada e temporária.
@@ -200,7 +223,11 @@ export default {
       }
 
       return cors(json({ error: "not_found" }, 404));
-    } catch {
+    } catch (error) {
+      // Não registrar mensagens ou objetos de erro, que podem conter dados sensíveis.
+      console.error("XFLUX Meta Worker request failed", {
+        error_name: error instanceof Error ? error.name : "UnknownError",
+      });
       return cors(json({ error: "internal_error" }, 500));
     }
   },
