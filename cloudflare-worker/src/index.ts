@@ -314,10 +314,11 @@ export default {
           return cors(json({ pending: true }));
         }
         // A exclusão condicional faz a entrega ser consumida uma única vez, inclusive com duas janelas abertas.
-        let consumed: D1Result;
+        let consumedChanges = 0;
         try {
-          consumed = await env.DB.prepare("DELETE FROM oauth_results WHERE device_id = ? AND encrypted_token = ?")
+          const consumed = await env.DB.prepare("DELETE FROM oauth_results WHERE device_id = ? AND encrypted_token = ?")
             .bind(deviceId, row.encrypted_token).run();
+          consumedChanges = consumed.meta.changes;
         } catch (error) {
           logOAuth("d1_handoff_consume", {
             outcome: "failed",
@@ -325,7 +326,7 @@ export default {
           });
           throw error;
         }
-        if (consumed.meta.changes !== 1) {
+        if (consumedChanges !== 1) {
           logOAuth("d1_handoff_consume", { outcome: "not_consumed" });
           return cors(json({ pending: true }));
         }
