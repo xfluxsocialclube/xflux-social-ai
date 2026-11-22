@@ -84,8 +84,17 @@ function safeMetaMessage(value: unknown): string | undefined {
 }
 
 async function saveOAuthError(deviceId: string, code: string, now: number, env: Env) {
-  await env.DB.prepare("INSERT OR REPLACE INTO oauth_results (device_id, encrypted_token, token_type, token_expires_at, delivery_expires_at) VALUES (?, '', ?, NULL, ?)")
-    .bind(deviceId, `error:${code}`, now + 300).run();
+  try {
+    await env.DB.prepare("INSERT OR REPLACE INTO oauth_results (device_id, encrypted_token, token_type, token_expires_at, delivery_expires_at) VALUES (?, '', ?, NULL, ?)")
+      .bind(deviceId, `error:${code}`, now + 300).run();
+    logOAuth("d1_handoff_write", { outcome: "oauth_error_saved", error_code: code });
+  } catch (error) {
+    logOAuth("d1_handoff_write", {
+      outcome: "failed",
+      error_name: error instanceof Error ? error.name : "UnknownError",
+    });
+    throw error;
+  }
 }
 
 export default {
@@ -146,10 +155,12 @@ export default {
         const state = url.searchParams.get("state");
         const providerError = url.searchParams.get("error_description") || url.searchParams.get("error");
 
-        logOAuth("callback_received", {
-          has_code: Boolean(code),
-          has_provider_error: Boolean(providerError),
-        });
+        if (code || providerError) {
+          logOAuth("callback_received", {
+            has_code: Boolean(code),
+            has_provider_error: Boolean(providerError),
+          });
+        }
 
         if (!state) {
           logOAuth("state_validation", { outcome: "absent" });
