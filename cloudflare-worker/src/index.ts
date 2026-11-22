@@ -232,14 +232,13 @@ export default {
         };
         try {
           tokenData = await tokenResponse.json() as typeof tokenData;
-        } catch {
+        } catch (error) {
           logOAuth("token_exchange_response", {
             outcome: "invalid_json",
             http_status: tokenResponse.status,
           });
-          logOAuth("callback_error_branch", { branch: "token_exchange_invalid_json" });
-          await saveOAuthError(saved.device_id, "token_exchange_failed", now, env);
-          return callbackPage("A Meta não confirmou a autorização", "Volte ao XFLUX e tente novamente. Nenhuma conta foi marcada como conectada.", 502);
+          // Preserve the pre-diagnostics behavior for invalid JSON responses.
+          throw error;
         }
 
         if (!tokenResponse.ok || !tokenData.access_token) {
