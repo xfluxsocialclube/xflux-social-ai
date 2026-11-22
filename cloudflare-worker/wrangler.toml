@@ -9,12 +9,7 @@ database_name = "xflux-meta-auth"
 database_id = "11d4d42e-ab1d-4864-82c3-4d3975f672a2"
 
 [vars]
-META_APP_ID = "1162775726690246"
-META_CONFIG_ID = "1869324621158680"
-META_REDIRECT_URI = "https://xflux-social-ai.shopeexflux.workers.dev/oauth/meta/callback"
 META_GRAPH_VERSION = "v27.0"
 
 [triggers]
 crons = ["*/5 * * * *"]
-
-[previews]

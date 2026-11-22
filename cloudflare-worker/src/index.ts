@@ -23,7 +23,7 @@ async function sha256(value: string) {
 }
 
 async function encryptionKey(env: Env) {
-  const raw = fromB64(env.TOKEN_ENCRYPTION_KEY.trim());
+  const raw = fromB64(env.TOKEN_ENCRYPTION_KEY);
   if (raw.byteLength !== 32) throw new Error("TOKEN_ENCRYPTION_KEY must be a base64-encoded 32-byte key");
   return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
 }
@@ -118,11 +118,10 @@ export default {
         const now = Math.floor(Date.now() / 1000);
         await env.DB.prepare("INSERT INTO oauth_states (state, device_id, expires_at) VALUES (?, ?, ?)")
           .bind(state, deviceId, now + 600).run();
-        const graphVersion = env.META_GRAPH_VERSION?.trim() || "v27.0";
-        const auth = new URL(`https://www.facebook.com/${graphVersion}/dialog/oauth`);
-        auth.searchParams.set("client_id", env.META_APP_ID.trim());
-        auth.searchParams.set("config_id", env.META_CONFIG_ID.trim());
-        auth.searchParams.set("redirect_uri", env.META_REDIRECT_URI.trim());
+        const auth = new URL(`https://www.facebook.com/${env.META_GRAPH_VERSION || "v27.0"}/dialog/oauth`);
+        auth.searchParams.set("client_id", env.META_APP_ID);
+        auth.searchParams.set("config_id", env.META_CONFIG_ID);
+        auth.searchParams.set("redirect_uri", env.META_REDIRECT_URI);
         auth.searchParams.set("response_type", "code");
         auth.searchParams.set("state", state);
         return cors(json({ authorizationUrl: auth.toString() }));
@@ -147,51 +146,16 @@ export default {
           return callbackPage("Resposta incompleta", "Não recebemos o código de autorização da Meta. Volte ao XFLUX e tente novamente.", 400);
         }
 
-        const graphVersion = env.META_GRAPH_VERSION?.trim() || "v27.0";
-        const tokenUrl = new URL(`https://graph.facebook.com/${graphVersion}/oauth/access_token`);
-        tokenUrl.searchParams.set("client_id", env.META_APP_ID.trim());
-        tokenUrl.searchParams.set("client_secret", env.META_APP_SECRET.trim());
-        tokenUrl.searchParams.set("redirect_uri", env.META_REDIRECT_URI.trim());
+        const tokenUrl = new URL(`https://graph.facebook.com/${env.META_GRAPH_VERSION || "v27.0"}/oauth/access_token`);
+        tokenUrl.searchParams.set("client_id", env.META_APP_ID);
+        tokenUrl.searchParams.set("client_secret", env.META_APP_SECRET);
+        tokenUrl.searchParams.set("redirect_uri", env.META_REDIRECT_URI);
         tokenUrl.searchParams.set("code", code);
         const tokenResponse = await fetch(tokenUrl.toString(), { method: "GET" });
-        let tokenData: {
-          access_token?: string;
-          token_type?: string;
-          expires_in?: number;
-          error?: { type?: string; code?: number; error_subcode?: number; fbtrace_id?: string };
-        };
-        try {
-          tokenData = await tokenResponse.json() as typeof tokenData;
-        } catch {
-          console.warn("Meta OAuth token exchange returned invalid JSON", {
-            http_status: tokenResponse.status,
-          });
-          await saveOAuthError(saved.device_id, "token_exchange_failed", now, env);
-          return callbackPage("A Meta não confirmou a autorização", "A resposta da Meta veio em formato inesperado. Volte ao XFLUX e tente novamente.", 502);
-        }
+        const tokenData = await tokenResponse.json() as {access_token?:string;token_type?:string;expires_in?:number;error?:{message?:string}};
         if (!tokenResponse.ok || !tokenData.access_token) {
-          // Registra somente identificadores técnicos seguros. Nunca registrar code,
-          // access_token, client_secret, URL completa ou corpo bruto da resposta.
-          console.warn("Meta OAuth token exchange failed", {
-            http_status: tokenResponse.status,
-            error_type: tokenData.error?.type,
-            error_code: tokenData.error?.code,
-            error_subcode: tokenData.error?.error_subcode,
-            fbtrace_id: tokenData.error?.fbtrace_id,
-          });
           await saveOAuthError(saved.device_id, "token_exchange_failed", now, env);
-          // Mostra apenas códigos numéricos não sensíveis para facilitar o diagnóstico
-          // sem exigir acesso aos logs e sem revelar credenciais ou a resposta bruta.
-          const diagnostic = [
-            `HTTP: ${tokenResponse.status}`,
-            tokenData.error?.code != null ? `código Meta: ${tokenData.error.code}` : null,
-            tokenData.error?.error_subcode != null ? `subcódigo: ${tokenData.error.error_subcode}` : null,
-          ].filter(Boolean).join(" | ");
-          return callbackPage(
-            "A Meta não confirmou a autorização",
-            `A troca do código falhou. ${diagnostic}. Envie esta informação ao suporte do XFLUX. Não compartilhe códigos de autorização ou tokens.`,
-            502,
-          );
+          return callbackPage("A Meta não confirmou a autorização", "Volte ao XFLUX e tente novamente. Nenhuma conta foi marcada como conectada.", 502);
         }
 
         // O token fica somente em uma caixa de entrega criptografada e temporária.
@@ -236,11 +200,7 @@ export default {
       }
 
       return cors(json({ error: "not_found" }, 404));
-    } catch (error) {
-      // Não registrar mensagens ou objetos de erro, que podem conter dados sensíveis.
-      console.error("XFLUX Meta Worker request failed", {
-        error_name: error instanceof Error ? error.name : "UnknownError",
-      });
+    } catch {
       return cors(json({ error: "internal_error" }, 500));
     }
   },
