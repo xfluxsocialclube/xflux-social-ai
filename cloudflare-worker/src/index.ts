@@ -23,7 +23,7 @@ async function sha256(value: string) {
 }
 
 async function encryptionKey(env: Env) {
-  const raw = fromB64(env.TOKEN_ENCRYPTION_KEY);
+  const raw = fromB64(env.TOKEN_ENCRYPTION_KEY.trim());
   if (raw.byteLength !== 32) throw new Error("TOKEN_ENCRYPTION_KEY must be a base64-encoded 32-byte key");
   return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["encrypt", "decrypt"]);
 }
@@ -118,10 +118,11 @@ export default {
         const now = Math.floor(Date.now() / 1000);
         await env.DB.prepare("INSERT INTO oauth_states (state, device_id, expires_at) VALUES (?, ?, ?)")
           .bind(state, deviceId, now + 600).run();
-        const auth = new URL(`https://www.facebook.com/${env.META_GRAPH_VERSION || "v27.0"}/dialog/oauth`);
-        auth.searchParams.set("client_id", env.META_APP_ID);
-        auth.searchParams.set("config_id", env.META_CONFIG_ID);
-        auth.searchParams.set("redirect_uri", env.META_REDIRECT_URI);
+        const graphVersion = env.META_GRAPH_VERSION?.trim() || "v27.0";
+        const auth = new URL(`https://www.facebook.com/${graphVersion}/dialog/oauth`);
+        auth.searchParams.set("client_id", env.META_APP_ID.trim());
+        auth.searchParams.set("config_id", env.META_CONFIG_ID.trim());
+        auth.searchParams.set("redirect_uri", env.META_REDIRECT_URI.trim());
         auth.searchParams.set("response_type", "code");
         auth.searchParams.set("state", state);
         return cors(json({ authorizationUrl: auth.toString() }));
@@ -146,10 +147,11 @@ export default {
           return callbackPage("Resposta incompleta", "Não recebemos o código de autorização da Meta. Volte ao XFLUX e tente novamente.", 400);
         }
 
-        const tokenUrl = new URL(`https://graph.facebook.com/${env.META_GRAPH_VERSION || "v27.0"}/oauth/access_token`);
-        tokenUrl.searchParams.set("client_id", env.META_APP_ID);
-        tokenUrl.searchParams.set("client_secret", env.META_APP_SECRET);
-        tokenUrl.searchParams.set("redirect_uri", env.META_REDIRECT_URI);
+        const graphVersion = env.META_GRAPH_VERSION?.trim() || "v27.0";
+        const tokenUrl = new URL(`https://graph.facebook.com/${graphVersion}/oauth/access_token`);
+        tokenUrl.searchParams.set("client_id", env.META_APP_ID.trim());
+        tokenUrl.searchParams.set("client_secret", env.META_APP_SECRET.trim());
+        tokenUrl.searchParams.set("redirect_uri", env.META_REDIRECT_URI.trim());
         tokenUrl.searchParams.set("code", code);
         const tokenResponse = await fetch(tokenUrl.toString(), { method: "GET" });
         let tokenData: {
