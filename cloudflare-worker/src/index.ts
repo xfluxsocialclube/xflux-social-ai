@@ -82,7 +82,7 @@ function safeMetaMessage(value: unknown, sensitiveValues: string[] = []): string
     if (sensitive) safe = safe.split(sensitive).join("[REDACTED]");
   }
   return safe
-    .replace(/(access_token|client_secret|code|state)=([^&\\s]+)/gi, "$1=[REDACTED]")
+    .replace(/(access_token|client_secret|code|state)=([^&\s]+)/gi, "$1=[REDACTED]")
     .replace(/[A-Za-z0-9_-]{80,}/g, "[REDACTED]")
     .slice(0, 300);
 }
