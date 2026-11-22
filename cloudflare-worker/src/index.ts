@@ -298,15 +298,33 @@ export default {
       if (url.pathname === "/oauth/meta/result" && request.method === "GET") {
         const deviceId = await authenticate(request, env);
         if (!deviceId) return cors(json({ error: "unauthorized" }, 401));
-        const row = await env.DB.prepare("SELECT encrypted_token, token_type, token_expires_at, delivery_expires_at FROM oauth_results WHERE device_id = ?")
-          .bind(deviceId).first<{encrypted_token:string;token_type:string|null;token_expires_at:number|null;delivery_expires_at:number}>();
+        let row: {encrypted_token:string;token_type:string|null;token_expires_at:number|null;delivery_expires_at:number} | null;
+        try {
+          row = await env.DB.prepare("SELECT encrypted_token, token_type, token_expires_at, delivery_expires_at FROM oauth_results WHERE device_id = ?")
+            .bind(deviceId).first<{encrypted_token:string;token_type:string|null;token_expires_at:number|null;delivery_expires_at:number}>();
+        } catch (error) {
+          logOAuth("d1_handoff_read", {
+            outcome: "failed",
+            error_name: error instanceof Error ? error.name : "UnknownError",
+          });
+          throw error;
+        }
         if (!row) {
           logOAuth("d1_handoff_read", { outcome: "pending" });
           return cors(json({ pending: true }));
         }
         // A exclusão condicional faz a entrega ser consumida uma única vez, inclusive com duas janelas abertas.
-        const consumed = await env.DB.prepare("DELETE FROM oauth_results WHERE device_id = ? AND encrypted_token = ?")
-          .bind(deviceId, row.encrypted_token).run();
+        let consumed: D1Result;
+        try {
+          consumed = await env.DB.prepare("DELETE FROM oauth_results WHERE device_id = ? AND encrypted_token = ?")
+            .bind(deviceId, row.encrypted_token).run();
+        } catch (error) {
+          logOAuth("d1_handoff_consume", {
+            outcome: "failed",
+            error_name: error instanceof Error ? error.name : "UnknownError",
+          });
+          throw error;
+        }
         if (consumed.meta.changes !== 1) {
           logOAuth("d1_handoff_consume", { outcome: "not_consumed" });
           return cors(json({ pending: true }));
