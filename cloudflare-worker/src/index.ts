@@ -75,9 +75,13 @@ function logOAuth(stage: string, details: Record<string, unknown> = {}) {
   console.log(JSON.stringify({ component: "xflux_meta_oauth", stage, ...details }));
 }
 
-function safeMetaMessage(value: unknown): string | undefined {
+function safeMetaMessage(value: unknown, sensitiveValues: string[] = []): string | undefined {
   if (typeof value !== "string") return undefined;
-  return value
+  let safe = value;
+  for (const sensitive of sensitiveValues) {
+    if (sensitive) safe = safe.split(sensitive).join("[REDACTED]");
+  }
+  return safe
     .replace(/(access_token|client_secret|code|state)=([^&\\s]+)/gi, "$1=[REDACTED]")
     .replace(/[A-Za-z0-9_-]{80,}/g, "[REDACTED]")
     .slice(0, 300);
@@ -245,7 +249,7 @@ export default {
             error_type: tokenData.error?.type,
             error_code: tokenData.error?.code,
             error_subcode: tokenData.error?.error_subcode,
-            error_message: safeMetaMessage(tokenData.error?.message),
+            error_message: safeMetaMessage(tokenData.error?.message, [code, state, env.META_APP_SECRET]),
           });
           logOAuth("callback_error_branch", { branch: "token_exchange_failed" });
           await saveOAuthError(saved.device_id, "token_exchange_failed", now, env);
