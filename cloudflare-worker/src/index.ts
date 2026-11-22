@@ -178,7 +178,18 @@ export default {
             fbtrace_id: tokenData.error?.fbtrace_id,
           });
           await saveOAuthError(saved.device_id, "token_exchange_failed", now, env);
-          return callbackPage("A Meta não confirmou a autorização", "A Meta recusou a troca do código de autorização. Volte ao XFLUX e tente novamente.", 502);
+          // Mostra apenas códigos numéricos não sensíveis para facilitar o diagnóstico
+          // sem exigir acesso aos logs e sem revelar credenciais ou a resposta bruta.
+          const diagnostic = [
+            `HTTP: ${tokenResponse.status}`,
+            tokenData.error?.code != null ? `código Meta: ${tokenData.error.code}` : null,
+            tokenData.error?.error_subcode != null ? `subcódigo: ${tokenData.error.error_subcode}` : null,
+          ].filter(Boolean).join(" | ");
+          return callbackPage(
+            "A Meta não confirmou a autorização",
+            `A troca do código falhou. ${diagnostic}. Envie esta informação ao suporte do XFLUX. Não compartilhe códigos de autorização ou tokens.`,
+            502,
+          );
         }
 
         // O token fica somente em uma caixa de entrega criptografada e temporária.
