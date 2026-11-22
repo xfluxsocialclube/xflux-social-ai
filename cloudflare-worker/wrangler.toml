@@ -13,3 +13,5 @@ META_GRAPH_VERSION = "v27.0"
 
 [triggers]
 crons = ["*/5 * * * *"]
+
+[previews]
